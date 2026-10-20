@@ -1,0 +1,112 @@
+[project]
+name = "cflow"
+version = "0.1.0"
+description = "cFlow - graph-based data pipeline platform (API + core, uv workspace root)"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+# The root depends on the workspace members so that the single environment always contains them
+# (otherwise `uv run` would remove them for not being dependencies of the root).
+dependencies = [
+    "cflow-core",
+    "cflow-api",
+]
+
+[dependency-groups]
+# Dev/migration/test tooling, available through `uv run` at the workspace root.
+dev = [
+    "alembic>=1.13",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+    "ruff>=0.4",
+]
+# Only Alembic, so the API image can apply the migrations before starting:
+# `cd migrations && uv run alembic upgrade head`. Kept out of the `dev` group so the image does
+# not carry pytest/ruff.
+migracao = [
+    "alembic>=1.13",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+# The worker and the web front-end live in their own directories (`worker/`, `web/`).
+members = ["core", "api"]
+
+[tool.uv.sources]
+cflow-core = { workspace = true }
+cflow-api = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["core/src", "api/src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S"]
+ignore = [
+    # `ruff format` already wraps lines wherever it can. What remains under E501 are strings,
+    # URLs and comments the formatter cannot split without changing the content.
+    "E501",
+]
+
+[tool.ruff.lint.isort]
+# `cflow_worker` lives in `worker/`, but the API integration suite imports it: it stays first-party.
+known-first-party = ["cflow_worker"]
+
+[tool.ruff.lint.per-file-ignores]
+# B008 forbids function calls in default arguments. In a FastAPI route, `= Depends(...)` and
+# `= Query(...)` are exactly that and are the framework idiom, not a bug.
+"api/src/cflow_api/routes/*.py" = ["B008"]
+"api/src/cflow_api/*.py" = ["B008"]
+
+# "S" (flake8-bandit) is adopted as a RATCHET: new `subprocess`, fixed `/tmp`, literal passwords
+# and string-built SQL show up in `make lint`. Every exception below is per FILE and has a reason.
+
+# In tests `assert` is the idiom, secrets are disposable and file paths must be named.
+"**/tests/**" = [
+    "S101",          # `assert` is how pytest verifies
+    "S105", "S106",  # literal password/token: disposable, never leaves the runner
+    "S108",          # explicit /tmp: file-path tests need to name a directory
+    "S110",          # try/except/pass in best-effort harness cleanup
+    "S306",          # mktemp to name a fixture, not to store a secret
+    "S311",          # non-cryptographic random when generating test data
+    "S603", "S607",  # subprocess: the backup test calls the real `pg_dump`
+    "S608",          # f-string SQL inside the test itself
+]
+
+# f-string SQL is the repository style and is NOT injection: what enters the text are validated or
+# quoted identifiers (`^[A-Za-z_][A-Za-z0-9_]*$`) and table names derived from versioned
+# definitions; every VALUE goes through native binds (`:name`/`?`). The engine's job is to
+# generate SQL, so static SQL is not possible. The rule stays on for the rest of the code.
+"core/src/**" = ["S608"]
+
+# `random.uniform` for the backoff JITTER (`retry.py`), not a secret. Per file, so a new `random`
+# in credential/token code still fails.
+"core/src/cflow_core/retry.py" = ["S311"]
+# The sandbox EXISTS to run an external process: `subprocess` is the module's purpose, with a list
+# argument (never `shell=True`).
+"core/src/cflow_core/execucao/sandbox.py" = ["S603"]
+# Operations scripts run by an admin by hand (not product surface): they call `pg_dump` through
+# docker and use explicit paths. Per file, so a NEW script does not inherit the exception.
+"scripts/backup.py" = ["S603", "S608"]
+
+# Preview is best-effort by definition: a node that cannot be sampled must not take down the
+# preview of the others.
+"core/src/cflow_core/pipelines/preview.py" = ["S110"]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "api/tests",
+    "core/tests",
+]
+addopts = "-ra"
+asyncio_mode = "auto"
+# Make the workspace packages importable (independent of the uv editable install).
+# `cflow_worker` for the API integration suite comes from the sibling `worker/` directory
+# (api/tests/integration/_plataforma.py), not from here.
+pythonpath = ["core/src", "api/src", "scripts"]
+markers = [
+    "integration: tests that require the docker-compose Postgres",
+]

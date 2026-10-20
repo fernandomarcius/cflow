@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+.env
+*.env
+snapshots
+lake
+lake_cache
+exports
+uploads
+backups
+docs
+**/tests
+web/node_modules

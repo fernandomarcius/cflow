@@ -1,0 +1,229 @@
+# Local / self-hosted environment: PostgreSQL (metadata), Temporal, API, worker and web UI.
+# `make up` runs this compose file; `make migrate` applies the migrations as cflow_owner.
+#
+# One image per component, all built from this repository:
+#   api    -> ./Dockerfile
+#   worker -> ./worker/Dockerfile (build context = repository root, it installs ./core)
+#   web    -> ./web
+name: cflow
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cflow}
+      POSTGRES_USER: ${POSTGRES_USER:-cflow_owner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-owner}
+      TEMPORAL_DB_USER: ${TEMPORAL_DB_USER:-temporal_app}
+      TEMPORAL_DB_PASSWORD: ${TEMPORAL_DB_PASSWORD:-change-me-temporal}
+    ports:
+      # configurable host port to avoid clashing with another Postgres on 5432
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    # Explicit tuning: the image defaults target a toy container. The values below assume a modest
+    # host (>= 8 GB) SHARED with the worker (which runs DuckDB and is the one that needs the RAM).
+    #   shared_buffers / effective_cache_size  - Postgres cache without starving DuckDB
+    #   work_mem                               - sort/hash of the audit and cube queries
+    #   random_page_cost 1.1 + io concurrency  - SSD; the planner would otherwise avoid indexes
+    #   pg_stat_statements + track_io_timing   - without them "which query is slow" has no answer
+    #   log_min_duration_statement 1s          - slow queries land in the log with their text
+    #   idle_in_transaction_session_timeout    - safety net: kills an open, idle transaction (never a
+    #                                            running query); an open transaction pins xmin and
+    #                                            blocks autovacuum of every table
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - effective_cache_size=4GB
+      - -c
+      - work_mem=16MB
+      - -c
+      - maintenance_work_mem=256MB
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - effective_io_concurrency=200
+      - -c
+      - wal_compression=on
+      - -c
+      - track_io_timing=on
+      - -c
+      - idle_in_transaction_session_timeout=900000
+      - -c
+      - pg_stat_statements.max=5000
+      - -c
+      - pg_stat_statements.track=top
+      - -c
+      - log_min_duration_statement=1000
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./deploy/postgres/init-temporal-role.sh:/docker-entrypoint-initdb.d/10-temporal-role.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cflow_owner} -d ${POSTGRES_DB:-cflow}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Optional SQL Server used as a test data source (not part of the product). Only with --profile mssql.
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    profiles: ["mssql"]
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Change_Me_2026!}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "${MSSQL_HOST_PORT:-11433}:1433"
+
+  # Creates the Temporal schema in Postgres and exits. Idempotent (`update-schema` applies only what
+  # is missing); the server waits for it to finish successfully.
+  temporal-setup:
+    image: temporalio/admin-tools:1.31.2
+    profiles: ["temporal"]
+    environment:
+      SQL_PLUGIN: postgres12
+      SQL_HOST: postgres
+      SQL_PORT: 5432
+      SQL_USER: ${TEMPORAL_DB_USER:-temporal_app}
+      SQL_PASSWORD: ${TEMPORAL_DB_PASSWORD:-change-me-temporal}
+    entrypoint: ["/bin/sh", "-c"]  # the admin-tools image has no bash
+    command:
+      - |
+        set -e
+        temporal-sql-tool --database ${TEMPORAL_DB_NAME:-temporal} create-database || true
+        temporal-sql-tool --database ${TEMPORAL_VISIBILITY_DB_NAME:-temporal_visibility} create-database || true
+        temporal-sql-tool --database ${TEMPORAL_DB_NAME:-temporal} setup-schema -v 0.0
+        temporal-sql-tool --database ${TEMPORAL_DB_NAME:-temporal} update-schema \
+          -d /etc/temporal/schema/postgresql/v12/temporal/versioned
+        temporal-sql-tool --database ${TEMPORAL_VISIBILITY_DB_NAME:-temporal_visibility} setup-schema -v 0.0
+        temporal-sql-tool --database ${TEMPORAL_VISIBILITY_DB_NAME:-temporal_visibility} update-schema \
+          -d /etc/temporal/schema/postgresql/v12/visibility/versioned
+        echo "Temporal schema is up to date"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # Self-hosted Temporal with persistence in the same Postgres, in dedicated databases and role.
+  # (`temporal server start-dev` without a volume loses the history of in-flight workflows on every
+  # restart, leaving runs stuck in `executando`.)
+  temporal:
+    image: temporalio/server:1.31.2
+    profiles: ["temporal"]
+    environment:
+      DB: postgres12
+      POSTGRES_SEEDS: postgres
+      DB_PORT: 5432
+      POSTGRES_USER: ${TEMPORAL_DB_USER:-temporal_app}
+      POSTGRES_PWD: ${TEMPORAL_DB_PASSWORD:-change-me-temporal}
+      DBNAME: ${TEMPORAL_DB_NAME:-temporal}
+      VISIBILITY_DBNAME: ${TEMPORAL_VISIBILITY_DB_NAME:-temporal_visibility}
+      LOG_LEVEL: warn
+    volumes:
+      # The `server` image does not ship the dynamic config and refuses to start without it.
+      - ./deploy/temporal/dynamicconfig.yaml:/etc/temporal/config/dynamicconfig/docker.yaml:ro
+    ports:
+      - "${TEMPORAL_HOST_PORT:-7233}:7233"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal-setup:
+        condition: service_completed_successfully
+
+  # Registers the `default` namespace (the real server does not create it, unlike start-dev).
+  temporal-namespace:
+    image: temporalio/admin-tools:1.31.2
+    profiles: ["temporal"]
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        for i in $$(seq 1 60); do
+          temporal operator namespace describe default >/dev/null 2>&1 && exit 0
+          temporal operator namespace create --retention ${TEMPORAL_RETENCAO:-720h} default 2>&1 \
+            | grep -qi "already exists" && exit 0
+          temporal operator namespace describe default >/dev/null 2>&1 && exit 0
+          sleep 2
+        done
+        echo "could not register the default namespace" >&2; exit 1
+    depends_on:
+      - temporal
+    restart: "no"
+
+  temporal-ui:
+    image: temporalio/ui:2.53.1
+    profiles: ["temporal"]
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:${TEMPORAL_UI_PORT:-8233}
+    ports:
+      - "${TEMPORAL_UI_PORT:-8233}:8080"
+    depends_on:
+      - temporal
+
+  api:
+    image: ghcr.io/fernandomarcius/cflow-api:${CFLOW_IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      # inside compose the database host is the "postgres" service
+      CFLOW_DATABASE_URL: postgresql+asyncpg://${CFLOW_APP_USER:-cflow_app}:${CFLOW_APP_PASSWORD:-change-me-app}@postgres:5432/${POSTGRES_DB:-cflow}
+      CFLOW_USAR_TEMPORAL: ${CFLOW_USAR_TEMPORAL:-true}
+      CFLOW_TEMPORAL_HOST: temporal:7233
+      CFLOW_LAKE_DIR: /app/lake
+    ports:
+      - "8000:8000"
+    volumes:
+      - snapshots:/app/snapshots
+      - uploads:/app/uploads
+      # Local-backend lake, shared with the worker (which is the one that writes).
+      - lake:/app/lake
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Front end: nginx serving the build, with COOP/COEP headers and an /api -> api proxy.
+  web:
+    image: ghcr.io/fernandomarcius/cflow-web:${CFLOW_IMAGE_TAG:-latest}
+    build:
+      context: ./web
+    ports:
+      - "${WEB_HOST_PORT:-5173}:80"
+    depends_on:
+      - api
+
+  worker:
+    image: ghcr.io/fernandomarcius/cflow-worker:${CFLOW_IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    env_file: .env
+    environment:
+      CFLOW_DATABASE_URL: postgresql+asyncpg://${CFLOW_APP_USER:-cflow_app}:${CFLOW_APP_PASSWORD:-change-me-app}@postgres:5432/${POSTGRES_DB:-cflow}
+      CFLOW_TEMPORAL_HOST: temporal:7233
+      CFLOW_LAKE_DIR: /app/lake
+    # Worker budget. With `mem_limit`/`cpus` DuckDB derives `memory_limit`/`threads` from the cgroup
+    # and N activities x limit fits the container; without them DuckDB's default (80% of the HOST
+    # RAM per connection) applies. Enable in production; in dev it is up to the machine.
+    # mem_limit: 8g
+    # cpus: 4
+    volumes:
+      - snapshots:/app/snapshots
+      - uploads:/app/uploads
+      - lake:/app/lake
+      # Stable destination of the `saida` node (named publication for external consumption).
+      - exports:/app/exports
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  snapshots:
+  uploads:
+  lake:
+  exports:

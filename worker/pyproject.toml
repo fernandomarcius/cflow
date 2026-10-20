@@ -1,0 +1,57 @@
+[project]
+name = "cflow-worker"
+version = "0.1.0"
+description = "cFlow Temporal worker: pipeline execution, external ingestion, reports and schedulers."
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+dependencies = [
+    # Shared core (execution engine, connectors, ingestion, reports). It lives in the same
+    # repository, next to this directory, and is installed in editable mode.
+    "cflow-core",
+    "temporalio>=1.7,<2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+    "pytest-cov>=6.2",
+    "mypy>=1.18",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cflow_worker"]
+
+[tool.uv.sources]
+cflow-core = { path = "../core", editable = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S"]
+# E501: `ruff format` already wraps what it can; the rest are strings and comments.
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["cflow_core", "cflow_worker"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "S108", "S110", "S311"]
+
+[tool.coverage.run]
+source = ["src/cflow_worker"]
+relative_files = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+asyncio_mode = "auto"
+pythonpath = ["src"]

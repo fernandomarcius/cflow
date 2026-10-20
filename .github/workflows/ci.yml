@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --all-packages --group dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  core:
+    name: core (unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --all-packages --group dev
+      - run: uv run pytest core/tests -q
+
+  api:
+    name: api (integration tests)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: cflow
+          POSTGRES_USER: cflow_owner
+          POSTGRES_PASSWORD: ci-owner-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cflow_owner -d cflow"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      CFLOW_OWNER_DATABASE_URL: postgresql+asyncpg://cflow_owner:ci-owner-password@localhost:5432/cflow
+      CFLOW_DATABASE_URL: postgresql+asyncpg://cflow_app:ci-app-password@localhost:5432/cflow
+      CFLOW_APP_PASSWORD: ci-app-password
+      CFLOW_ADMIN_EMAIL: admin@example.com
+      CFLOW_ADMIN_PASSWORD: ci-admin-password-long-enough
+      # The suite starts the worker (./worker/src) inside pytest against this Temporal dev server.
+      CFLOW_TEMPORAL_HOST_TESTE: localhost:7233
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --all-packages --group dev
+      - name: Start a Temporal dev server
+        run: |
+          docker run -d --name temporal --network host temporalio/admin-tools:1.31.2 \
+            temporal server start-dev --ip 127.0.0.1 --headless --port 7233
+          for i in $(seq 1 30); do nc -z localhost 7233 && break; sleep 1; done
+      - name: Generate a vault key
+        run: echo "CFLOW_VAULT_KEY=$(uv run python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" >> "$GITHUB_ENV"
+      - run: uv run pytest api/tests -q

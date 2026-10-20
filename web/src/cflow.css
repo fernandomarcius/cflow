@@ -1,0 +1,2519 @@
+  :root{
+    --navy:#002050;
+    --navy-sup:#002050;   /* mesmo valor no claro; no escuro os papéis se separam (ver --navy lá) */
+    --navy-700:#0a2f63;
+    --lime:#C0D000;
+    --lime-soft:#eaf0a8;
+    --bg:#F4F6F8;
+    --surface:#FFFFFF;
+    --soft:#fafbfc;
+    --soft-lime:#f9fbe8;
+    --ink:#0d1b2e;
+    --ink-2:#46566b;
+    /* Texto de apoio que CARREGA informação (contagem, "não verificado", NULL vs. vazio) —
+       precisa passar AA de texto normal. #8492a6 dava 3,16:1 sobre branco; #64748b passava no card
+       branco (4,76:1) e reprovava sobre o fundo da PÁGINA (4,39:1) — que é justamente onde ficam os
+       contadores do editor ("9 nós · 3 fontes"). #5f6c80: 5,33:1 no card, 4,92:1 na página. */
+    --ink-3:#5f6c80;
+    --hair:#e4e9ef;
+    --hair-2:#eef1f5;
+    --radius:6px;
+    --shadow-1:0 1px 2px rgba(10,32,72,.05),0 1px 1px rgba(10,32,72,.04);
+    --shadow-2:0 8px 30px rgba(10,32,72,.10);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:13.5px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  .display{font-family:"Space Grotesk",sans-serif;}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;}
+  p,td,th,div{text-wrap:pretty;}
+  ::selection{background:var(--lime-soft);color:var(--navy);}
+  button{font-family:inherit;cursor:pointer;}
+  #root{height:100vh;}
+
+  /* ---- shell ---- */
+  /* A linha do grid fica PRESA à altura da tela e a barra rola por dentro. Sem `grid-template-rows`
+     a linha crescia até o conteúdo da barra (784 px de navegação de admin numa tela de 720), a janela
+     ganhava rolagem e a base do `.content` ia para baixo da dobra — ver e2e/layout-shell.spec.ts. */
+  .shell{display:grid;grid-template-columns:232px 1fr;grid-template-rows:minmax(0,1fr);height:100vh;}
+  .sidebar{
+    background:linear-gradient(180deg,#14294d 0%,#0e1d38 100%);
+    color:#cdd8e8;
+    display:flex;flex-direction:column;min-height:0;overflow-y:auto;
+    border-right:1px solid #0a1a36;
+  }
+  .brand{display:flex;align-items:center;gap:10px;padding:16px 16px 14px;}
+  .brand .chip{
+    width:30px;height:30px;border-radius:7px;background:var(--surface);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    box-shadow:0 0 0 1px rgba(255,255,255,.08);
+  }
+  .brand .chip img{width:24px;height:24px;object-fit:contain;border-radius:4px;}
+  .brand .word{font-family:"Space Grotesk";font-weight:700;font-size:18px;letter-spacing:-.01em;color:#fff;}
+  .brand .word b{color:var(--lime);font-weight:700;}
+  .brand .badge{margin-left:auto;font-size:10px;color:#7e93b5;letter-spacing:.04em;text-transform:uppercase;}
+
+  .nav-group-label{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:#5f78a0;padding:14px 18px 6px;}
+  .nav{display:flex;flex-direction:column;padding:0 10px;gap:1px;}
+  .nav-item{
+    display:flex;align-items:center;gap:11px;
+    padding:9px 11px;border-radius:9px;border:none;background:transparent;
+    color:#aebcd2;text-align:left;width:100%;font-size:13px;font-weight:600;
+    transition:background .15s,color .15s,box-shadow .15s;text-decoration:none;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.06);color:#fff;}
+  .nav-item.active{background:rgba(158,197,49,.18);color:#fff;box-shadow:inset 3px 0 0 #9ec531;}
+  .nav-item.active .ic{color:#9ec531;}
+  .nav-item .ic{width:15px;height:15px;color:#7e93b5;flex:none;}
+  .nav-item .kbd{margin-left:auto;font-size:10.5px;color:#5f78a0;border:1px solid #143a76;border-radius:4px;padding:1px 5px;}
+  .nav-item.active .kbd{color:#9fb2d4;}
+
+  .avatar{width:26px;height:26px;border-radius:50%;background:#0a2f63;display:flex;align-items:center;justify-content:center;font-size:11px;color:#cfe;font-weight:600;}
+  .sidebar-foot{margin-top:auto;padding:14px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px;}
+  .sidebar-user{display:flex;align-items:center;gap:11px;flex:1;min-width:0;padding:8px;border-radius:10px;background:rgba(255,255,255,.05);text-decoration:none;color:#fff;transition:background .12s,box-shadow .12s;}
+  .sidebar-user:hover{background:rgba(255,255,255,.09);}
+  .sidebar-user.active{background:rgba(158,197,49,.18);box-shadow:inset 3px 0 0 #9ec531;}
+  .sidebar-foot .avatar{width:38px;height:38px;border-radius:10px;background:#9ec531;color:#14294d;font-weight:800;font-size:13px;flex:none;}
+  .sidebar-user .who{font-size:12.5px;line-height:1.25;font-weight:700;min-width:0;overflow:hidden;}
+  .sidebar-user .who span{color:#8ea0c4;display:block;font-size:10.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sidebar-logout{background:none;border:none;color:#8ea0c4;cursor:pointer;padding:7px;border-radius:8px;display:flex;flex:none;}
+  .sidebar-logout:hover{background:rgba(255,255,255,.08);color:#fff;}
+  .sidebar-toggle{margin-left:auto;background:none;border:none;color:#8ea0c4;cursor:pointer;padding:5px;border-radius:7px;display:flex;flex:none;}
+  .sidebar-toggle:hover{background:rgba(255,255,255,.1);color:#fff;}
+  /* sidebar recolhida: rail estreito, só ícones */
+  .shell.recolhida{grid-template-columns:64px 1fr;}
+  .recolhida .nav-group-label{display:none;}
+  .recolhida .nav{padding:0 8px;}
+  .recolhida .nav-item{justify-content:center;padding:9px 0;gap:0;}
+  .recolhida .nav-item .nav-label,.recolhida .nav-item .kbd{display:none;}
+  .recolhida .brand{flex-direction:column;gap:10px;padding:14px 0;}
+  .recolhida .wordmark-text{display:none;}
+  .recolhida .wordmark{gap:0;}
+  .recolhida .sidebar-foot{padding:12px 8px;}
+  .recolhida .sidebar-user{justify-content:center;padding:8px 0;}
+  .recolhida .sidebar-user .who{display:none;}
+
+  /* ---- main ---- */
+  .main{display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+  .topbar{
+    height:52px;flex:none;display:flex;align-items:center;gap:14px;
+    padding:0 20px;border-bottom:1px solid var(--hair);background:var(--surface);
+  }
+  .crumbs{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-3);}
+  .crumbs b{color:var(--ink);font-weight:600;}
+  .crumbs .sep{color:var(--hair);}
+  .cmdk{
+    margin-left:auto;display:flex;align-items:center;gap:9px;
+    width:300px;max-width:34vw;
+    background:var(--bg);border:1px solid var(--hair);border-radius:6px;
+    padding:6px 10px;color:var(--ink-3);font-size:12.5px;transition:border .12s,box-shadow .12s;
+  }
+  .cmdk:hover{border-color:#cdd5df;}
+  .cmdk .kbd{margin-left:auto;font-size:10.5px;border:1px solid var(--hair);border-radius:4px;padding:1px 6px;color:var(--ink-3);background:var(--surface);}
+  .top-action{
+    display:flex;align-items:center;gap:7px;border:1px solid var(--hair);background:var(--surface);
+    border-radius:6px;padding:6px 11px;font-size:12.5px;color:var(--ink);box-shadow:var(--shadow-1);transition:.12s;
+  }
+  .top-action:hover{border-color:#cdd5df;}
+
+  .content{flex:1;overflow:auto;}
+  .page-head{padding:24px 28px 4px;}
+  .page-head h1{font-family:"Space Grotesk";font-weight:600;font-size:21px;margin:0;letter-spacing:-.015em;}
+  .page-head .sub{color:var(--ink-2);margin:5px 0 0;max-width:64ch;font-size:13px;}
+  .meta-row{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;}
+  .meta{display:flex;flex-direction:column;gap:1px;}
+  .meta .k{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);}
+  .meta .v{font-size:14px;font-family:"Space Grotesk";font-weight:600;}
+  .meta .v.lime{color:#5f6b00;}
+
+  .pad{padding:12px 28px 36px;}
+  .card{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);box-shadow:var(--shadow-1);}
+  .card-h{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--hair-2);}
+  .card-h h3{margin:0;font-size:12.5px;font-weight:600;letter-spacing:-.005em;}
+  .card-h .tag{margin-left:auto;font-size:11px;color:var(--ink-3);}
+  /* Contador que anda JUNTO do título (não empurrado ao meio): use quando o card-h também tem
+     ações à direita — com dois `margin-left:auto` o espaço se divide e a tag flutua no vazio. */
+  .card-h .tag.junto{margin-left:0;}
+  /* Micro-rótulo de campo/seção. Mesma receita de .fld/.agd-rot/.meta .k — sem esta regra base
+     o rótulo saía do mesmo peso do valor (a tela lia como frase, não como formulário). */
+  .eyebrow{display:block;font-size:11px;font-weight:600;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--ink-3);}
+
+  /* ---- form (padrão único de campo: rótulo .fld + input/select/textarea .nm) ---- */
+  .fld{display:block;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+  input.nm,select.nm,textarea.nm{width:100%;border:1px solid var(--hair);border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--surface);transition:border-color .12s,box-shadow .12s;}
+  input.nm:focus,select.nm:focus,textarea.nm:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(0,32,80,.10);}
+  input.nm::placeholder,textarea.nm::placeholder{color:var(--ink-3);}
+  textarea.nm{resize:vertical;min-height:64px;line-height:1.45;}
+  /* botão de adicionar (global — antes só existia escopado em .sd-tools/.libcard) */
+  button.add{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--hair);background:var(--soft);border-radius:5px;padding:6px 11px;font-size:12.5px;color:var(--navy);font-weight:500;cursor:pointer;font-family:inherit;}
+  button.add:hover{border-color:var(--lime);background:var(--soft-lime);}
+  /* botão estilo-link (ex.: "+ substituição") */
+  .lnk{background:none;border:none;color:var(--navy);font-size:12.5px;font-weight:500;cursor:pointer;padding:2px 0;font-family:inherit;align-self:flex-start;}
+  .lnk:hover{text-decoration:underline;}
+
+  /* ---- studio graph ---- */
+  .studio-grid{display:grid;grid-template-columns:1fr 332px;gap:18px;align-items:start;}
+  .canvas{
+    position:relative;height:430px;border-radius:var(--radius);overflow:hidden;
+    background:
+      radial-gradient(circle at 1px 1px, #dde4ec 1px, transparent 0) 0 0/22px 22px,
+      var(--surface);
+    border:1px solid var(--hair);box-shadow:var(--shadow-1);
+  }
+  .node{
+    position:absolute;width:182px;background:var(--surface);border:1px solid var(--hair);
+    border-radius:7px;box-shadow:var(--shadow-1);cursor:pointer;transition:.12s;user-select:none;
+  }
+  .node:hover{border-color:#b9c3d1;box-shadow:var(--shadow-2);}
+  .node.sel{border-color:var(--navy);box-shadow:0 0 0 2px rgba(0,32,80,.12),var(--shadow-2);}
+  .node.sel .node-bar{background:var(--navy);}
+  .node-bar{height:3px;background:var(--hair);border-radius:7px 7px 0 0;}
+  .node.kind-fonte .node-bar{background:#5b7aa8;}
+  .node.kind-juntar .node-bar{background:var(--lime);}
+  .node.kind-saida .node-bar{background:var(--navy);}
+  .node-body{padding:10px 12px;}
+  .node-type{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);display:flex;align-items:center;gap:6px;}
+  .node-type .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .node-name{font-family:"Space Grotesk";font-weight:600;font-size:13.5px;margin-top:3px;letter-spacing:-.01em;}
+  .node-foot{margin-top:7px;font-size:11px;color:var(--ink-3);display:flex;align-items:center;gap:5px;}
+  .node-foot b{color:var(--ink-2);font-weight:600;}
+  svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .wire{fill:none;stroke:#c6cedb;stroke-width:1.6;}
+  .wire.hot{stroke:var(--lime);stroke-width:2.2;}
+  .canvas-legend{position:absolute;left:12px;bottom:11px;display:flex;gap:14px;font-size:10.5px;color:var(--ink-3);background:rgba(255,255,255,.82);backdrop-filter:blur(3px);padding:5px 9px;border:1px solid var(--hair);border-radius:6px;}
+  .canvas-legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px;}
+
+  /* inspector */
+  .insp{display:flex;flex-direction:column;gap:14px;}
+  .insp .kvs{padding:12px 16px;display:flex;flex-direction:column;gap:9px;}
+  .kv{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;}
+  .kv .k{color:var(--ink-3);}
+  .kv .v{font-weight:500;text-align:right;}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;padding:2px 7px;border-radius:20px;border:1px solid var(--hair);color:var(--ink-2);background:var(--soft);}
+  .pill.ok{color:#3c5400;background:#f6f9e1;border-color:#e2ec9a;}
+  .sql{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.55;
+    background:var(--soft);border:1px solid var(--hair-2);border-radius:5px;padding:10px 12px;color:#24364f;
+    white-space:pre-wrap;
+  }
+  .sql .kw{color:#8a6d00;font-weight:600;}
+  .sql .id{color:var(--navy);}
+  table.prev{width:100%;border-collapse:collapse;font-size:11.5px;}
+  table.prev th{text-align:left;font-weight:600;color:var(--ink-3);font-size:10px;letter-spacing:.05em;text-transform:uppercase;padding:7px 12px;border-bottom:1px solid var(--hair-2);}
+  table.prev td{padding:7px 12px;border-bottom:1px solid var(--hair-2);color:var(--ink-2);}
+  table.prev tr:last-child td{border-bottom:none;}
+  table.prev td.mono{font-family:ui-monospace,Menlo,monospace;font-size:11px;}
+
+  .btn-run{
+    display:inline-flex;align-items:center;gap:8px;background:var(--navy-sup);color:#fff;border:none;
+    border-radius:6px;padding:8px 14px;font-size:13px;font-weight:500;box-shadow:var(--shadow-1);transition:.12s;
+  }
+  .btn-run:hover{background:var(--navy-700);}
+  .btn-run .ic{color:var(--lime);}
+  .run-banner{
+    margin-top:13px;display:flex;align-items:center;gap:10px;font-size:12.5px;
+    background:#f6f9e1;border:1px solid #e2ec9a;color:#3c5400;border-radius:6px;padding:9px 13px;
+  }
+  .run-banner .dot{width:8px;height:8px;border-radius:50%;background:#7a9000;}
+
+  /* ---- modelo / pivot ---- */
+  .modelo-grid{display:grid;grid-template-columns:248px 1fr;gap:18px;align-items:start;}
+  .dim-block{padding:12px 16px;}
+  .dim-block h4{margin:0 0 9px;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);}
+  .chip-col{display:flex;flex-direction:column;gap:7px;}
+  .chip{
+    display:flex;align-items:center;gap:9px;border:1px solid var(--hair);background:var(--surface);border-radius:6px;
+    padding:7px 10px;font-size:12.5px;color:var(--ink-2);text-align:left;transition:.12s;
+  }
+  .chip:hover{border-color:#c3ccd8;}
+  .chip .mk{width:9px;height:9px;border-radius:3px;border:1.5px solid #c3ccd8;flex:none;}
+  .chip.on{border-color:var(--navy);background:var(--soft);color:var(--ink);font-weight:500;}
+  .chip.on .mk{background:var(--lime);border-color:var(--lime);}
+  .chip.dim{cursor:default;}
+  .chip.dim .mk{border-radius:50%;border-color:#9fb;background:#dfe9f4;border-color:#bcd;}
+
+  .pivot-wrap{overflow:auto;}
+  table.pivot{width:100%;border-collapse:collapse;font-size:13px;}
+  table.pivot thead th{
+    position:sticky;top:0;background:var(--surface);text-align:right;font-weight:600;font-size:11px;letter-spacing:.03em;
+    color:var(--ink-3);text-transform:uppercase;padding:10px 16px;border-bottom:1px solid var(--hair);
+  }
+  table.pivot thead th:first-child{text-align:left;}
+  table.pivot td{padding:9px 16px;border-bottom:1px solid var(--hair-2);text-align:right;}
+  table.pivot td:first-child{text-align:left;font-weight:500;color:var(--ink);}
+  table.pivot tbody tr:hover{background:var(--soft);}
+  table.pivot tfoot td{padding:10px 16px;font-weight:600;border-top:1px solid var(--hair);background:var(--soft);text-align:right;}
+  table.pivot tfoot td:first-child{text-align:left;color:var(--ink-3);text-transform:uppercase;font-size:11px;letter-spacing:.05em;}
+  .bar-cell{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end;width:100%;}
+  .bar-cell .bar{height:6px;border-radius:3px;background:var(--lime);opacity:.85;}
+  .note-line{
+    display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink-2);
+    margin:0 0 14px;background:var(--soft);border:1px solid var(--hair);border-radius:6px;padding:9px 13px;
+  }
+  .note-line .badge{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#5f6b00;background:#f0f4cd;border:1px solid #e2ec9a;border-radius:4px;padding:2px 7px;font-weight:600;}
+
+  /* ---- portal: catálogo em tabela (.dgrid); nome = botão p/ abrir ---- */
+  .dgrid .dg-link{border:none;background:none;padding:0;font-family:"Space Grotesk";font-weight:600;font-size:13.5px;letter-spacing:-.01em;color:var(--ink);cursor:pointer;text-align:left;}
+  .dgrid .dg-link:hover{color:var(--navy);text-decoration:underline;}
+  .dgrid .ro{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);border:1px solid var(--hair);border-radius:4px;padding:1px 6px;}
+
+  .btn-stamp{
+    display:inline-flex;align-items:center;gap:8px;background:var(--navy-sup);color:#fff;border:none;
+    border-radius:6px;padding:9px 15px;font-size:13px;font-weight:500;box-shadow:var(--shadow-1);transition:.12s;
+  }
+  .btn-stamp:hover{background:var(--navy-700);}
+  .btn-stamp .ic{color:var(--lime);}
+  .trace-card{
+    margin-top:14px;background:var(--surface);border:1px solid var(--hair);border-left:3px solid var(--lime);
+    border-radius:var(--radius);box-shadow:var(--shadow-1);padding:16px 18px;
+  }
+  .trace-card h4{margin:0 0 3px;font-family:"Space Grotesk";font-size:14px;font-weight:600;}
+  .trace-card .immut{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#5f6b00;}
+  .trace-chain{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:13px 0 12px;}
+  .trace-chain .step{font-size:11.5px;background:var(--soft);border:1px solid var(--hair);border-radius:5px;padding:4px 9px;color:var(--ink-2);font-family:ui-monospace,Menlo,monospace;}
+  .trace-chain .step.term{border-color:#e2ec9a;background:#f6f9e1;color:#3c5400;}
+  .trace-chain .arr{color:var(--ink-3);}
+  .trace-foot{font-size:11.5px;color:var(--ink-3);display:flex;gap:16px;flex-wrap:wrap;border-top:1px solid var(--hair-2);padding-top:11px;}
+  .trace-foot b{color:var(--ink-2);font-weight:600;}
+
+  .ro-banner{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink-2);margin-bottom:14px;}
+  .ro-banner .ro{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#46566b;background:#eef1f5;border:1px solid var(--hair);border-radius:4px;padding:2px 7px;font-weight:600;}
+
+  .link-back{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2);background:none;border:none;padding:0;margin-bottom:6px;}
+  .link-back:hover{color:var(--navy);}
+
+  /* ---- parâmetros (entrada do operador) ---- */
+  .params-grid{display:grid;grid-template-columns:1fr 300px;gap:22px;align-items:start;}
+  /* overflow:visible p/ o dropdown da operação não ser cortado; cantos arredondados nas células das pontas. */
+  .ptable{display:flex;flex-direction:column;border:1px solid var(--hair);border-radius:var(--radius);overflow:visible;background:var(--surface);box-shadow:var(--shadow-1);}
+  .prow:first-child .plabel{border-top-left-radius:var(--radius);}
+  .prow:first-child .pval{border-top-right-radius:var(--radius);}
+  .prow:last-child .plabel{border-bottom-left-radius:var(--radius);}
+  .prow:last-child .pval{border-bottom-right-radius:var(--radius);}
+  .prow{display:grid;grid-template-columns:190px 1fr;border-bottom:1px solid var(--hair-2);}
+  .prow:last-child{border-bottom:none;}
+  .plabel{background:var(--lime);color:var(--navy);font-weight:600;font-size:12.5px;padding:11px 14px;display:flex;align-items:center;gap:7px;}
+  /* O asterisco de "obrigatório" é o único sinal de campo exigido no formulário do operador:
+     #5f6b00 sobre o lime dava 3,48:1. */
+  .plabel .req{color:#3c5400;}
+  .pval{padding:7px 12px;display:flex;align-items:center;}
+  .pval select,.pval input{width:100%;border:1px solid var(--hair);border-radius:5px;padding:7px 9px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--surface);}
+  .pval.ro{color:var(--ink-2);font-family:ui-monospace,Menlo,monospace;font-size:13px;padding-left:14px;}
+  /* Combobox de operação: lista abre ABAIXO do campo (não ao lado). */
+  .combo{position:relative;width:100%;}
+  .combo-list{position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:40;margin:0;padding:4px;list-style:none;max-height:240px;overflow-y:auto;background:var(--surface);border:1px solid var(--hair);border-radius:6px;box-shadow:var(--shadow-1);}
+  .combo-list li{padding:7px 9px;font-size:13px;border-radius:4px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .combo-list li:hover,.combo-list li.sel{background:var(--lime);color:var(--navy);}
+  .instr{background:var(--soft);border:1px solid var(--hair);border-radius:var(--radius);padding:15px 16px;}
+  .instr h4{margin:0 0 10px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);}
+  .instr ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;}
+  .instr li{font-size:12.5px;color:var(--ink-2);display:flex;gap:8px;line-height:1.45;}
+  /* Marcador "→" da lista de instruções: em lime puro sobre o card claro dá 1,65:1 e some. Ele é o
+     bullet da lista — mesmo sendo redundante com o texto, um marcador invisível deixa a lista sem
+     ritmo de leitura. Verde escuro no claro (4,69:1); no escuro o lime já contrasta e fica. */
+  .instr li .ar{color:#577f2a;font-weight:700;flex:none;}
+  .instr li b{color:var(--ink);}
+  .report-rail{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .report-tab{border:1px solid var(--hair);background:var(--surface);border-radius:20px;padding:6px 13px;font-size:12.5px;color:var(--ink-2);white-space:nowrap;}
+  .report-tab.on{background:var(--navy-sup);color:#fff;border-color:var(--navy);}
+  .rail-arrow{width:30px;height:30px;border-radius:50%;border:1px solid var(--hair);background:var(--surface);color:var(--ink-2);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:var(--shadow-1);}
+  .rail-arrow:hover{border-color:#c3ccd8;color:var(--navy);}
+
+  /* ---- visualização multi-pivot (conferência) ---- */
+  .filterbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+  .filterbar .fl{display:flex;align-items:center;gap:7px;border:1px solid var(--hair);background:var(--surface);border-radius:6px;padding:5px 10px;font-size:12.5px;color:var(--ink-2);box-shadow:var(--shadow-1);}
+  .filterbar .fl b{color:var(--ink);font-weight:600;}
+  .filterbar .fl select{border:none;background:none;font-family:inherit;font-size:12.5px;color:var(--navy);font-weight:600;}
+  .vis-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:start;}
+  .mpanel{border:1px solid var(--hair);border-radius:var(--radius);overflow:hidden;background:var(--surface);box-shadow:var(--shadow-1);}
+  .mpanel .mh{padding:9px 13px;font-size:12px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px;}
+  .mpanel .mh.verde{background:#5f8a2e;}
+  .mpanel .mh.marca{background:var(--navy-sup);}
+  .mpanel .mh.resultado{background:#46566b;}
+  .mpanel .mh .tot{margin-left:auto;font-variant-numeric:tabular-nums;opacity:.92;}
+  table.mt{width:100%;border-collapse:collapse;font-size:12px;}
+  table.mt th{text-align:right;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:6px 12px;border-bottom:1px solid var(--hair-2);}
+  table.mt th:first-child{text-align:left;}
+  table.mt td{padding:5px 12px;border-bottom:1px solid var(--hair-2);text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-2);}
+  table.mt td:first-child{text-align:left;color:var(--ink);font-family:ui-monospace,Menlo,monospace;font-size:11px;}
+  table.mt tfoot .tot-row td, table.bmini tfoot .tot-row td{border-top:2px solid var(--hair);border-bottom:none;background:var(--soft);color:var(--ink);padding-top:7px;padding-bottom:7px;font-weight:600;}
+  table.mt tr:last-child td{border-bottom:none;}
+  table.mt td.diff{color:#b23b43;font-weight:600;}
+  table.mt td.zero{color:#3c8a5e;}
+  .obs-card{margin-top:14px;}
+  table.obs{width:100%;border-collapse:collapse;font-size:12px;}
+  table.obs th{text-align:left;background:var(--navy-sup);color:#fff;font-weight:600;font-size:11px;padding:8px 13px;position:sticky;top:0;}
+  table.obs td{padding:7px 13px;border-bottom:1px solid var(--hair-2);color:var(--ink-2);}
+  table.obs tr:nth-child(even) td{background:var(--soft);}
+
+  /* ---- construtor drag-and-drop (especialista) ---- */
+  .build-grid{display:grid;grid-template-columns:212px 1fr;gap:18px;align-items:start;}
+  .shelf{padding:13px 15px;}
+  .shelf h4{margin:0 0 9px;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);}
+  .shelf h4:not(:first-child){margin-top:16px;}
+  .fpill{display:flex;align-items:center;gap:8px;border:1px solid var(--hair);background:var(--surface);border-radius:6px;padding:7px 10px;font-size:12.5px;color:var(--ink);margin-bottom:7px;cursor:grab;box-shadow:var(--shadow-1);transition:.1s;}
+  .fpill:hover{border-color:#b9c3d1;}
+  .fpill:active{cursor:grabbing;}
+  .fpill .gr{color:var(--ink-3);font-size:11px;letter-spacing:1px;}
+  .fpill .dt{width:8px;height:8px;border-radius:2px;flex:none;}
+  .fpill.dim .dt{background:#5b7aa8;}
+  .fpill.med .dt{background:var(--lime);border-radius:50%;}
+  .zones{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .zone{border:1.5px dashed var(--hair);border-radius:var(--radius);padding:11px 13px;min-height:74px;background:var(--soft);transition:.12s;}
+  .zone.over{border-color:var(--lime);background:var(--soft-lime);}
+  .zone h5{margin:0 0 8px;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);display:flex;align-items:center;gap:6px;}
+  .zone .drop-pills{display:flex;flex-wrap:wrap;gap:6px;}
+  .zchip{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--hair);border-radius:20px;padding:3px 6px 3px 10px;font-size:12px;color:var(--ink);box-shadow:var(--shadow-1);}
+  .zchip .dt{width:7px;height:7px;border-radius:2px;}
+  .zchip.dim .dt{background:#5b7aa8;}
+  .zchip.med .dt{background:var(--lime);border-radius:50%;}
+  .zchip .x{border:none;background:none;color:var(--ink-3);font-size:14px;line-height:1;padding:0 2px;cursor:pointer;}
+  .zchip .x:hover{color:#b23b43;}
+  .zone .empty{font-size:11.5px;color:var(--ink-3);font-style:italic;}
+  .zone h5 .zhint{font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-3);margin-left:7px;font-size:10px;}
+
+  /* ---- construtor de página (especialista, guiado) ---- */
+  .steps{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+  .step-tag{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2);background:var(--surface);border:1px solid var(--hair);border-radius:20px;padding:5px 12px 5px 6px;box-shadow:var(--shadow-1);}
+  .step-tag .n{width:18px;height:18px;border-radius:50%;background:var(--lime);color:var(--navy);font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;}
+  .pg-grid{display:grid;grid-template-columns:236px 1fr 248px;gap:16px;align-items:start;}
+  .pg-col-h{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin:0 0 9px;}
+  .libcard{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);box-shadow:var(--shadow-1);padding:11px 13px;margin-bottom:9px;}
+  .libcard .lt{font-family:"Space Grotesk";font-weight:600;font-size:13px;}
+  .libcard .ld{font-size:11.5px;color:var(--ink-3);margin:2px 0 9px;}
+  .libcard .add{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--hair);background:var(--soft);border-radius:5px;padding:5px 10px;font-size:12px;color:var(--navy);font-weight:500;}
+  .libcard .add:hover{border-color:var(--lime);background:var(--soft-lime);}
+  .libcard.used{opacity:.55;}
+  .pg-canvas{min-height:360px;border:1.5px dashed var(--hair);border-radius:var(--radius);background:var(--soft);padding:16px;}
+  .pg-empty{height:330px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:var(--ink-3);}
+  .pg-empty .big{font-family:"Space Grotesk";font-size:15px;color:var(--ink-2);}
+  .pg-block{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);box-shadow:var(--shadow-1);margin-bottom:12px;overflow:hidden;}
+  .pg-block .bh{display:flex;align-items:center;gap:9px;padding:9px 13px;border-bottom:1px solid var(--hair-2);}
+  .pg-block .bh .bt{font-family:"Space Grotesk";font-weight:600;font-size:13px;}
+  .pg-block .bh .tools{margin-left:auto;display:flex;gap:4px;}
+  .pg-block .bh .tools button{width:24px;height:24px;border:1px solid var(--hair);background:var(--surface);border-radius:5px;color:var(--ink-2);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .pg-block .bh .tools button:hover{border-color:#c3ccd8;color:var(--navy);}
+  .pg-block .bh .tools button.del:hover{color:#b23b43;border-color:#e6b4b8;}
+  .pg-mini{padding:11px 13px;}
+  .pg-mini table{width:100%;border-collapse:collapse;font-size:11.5px;}
+  .pg-mini th{text-align:right;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);padding:4px 8px;border-bottom:1px solid var(--hair-2);}
+  .pg-mini th:first-child{text-align:left;}
+  .pg-mini td{text-align:right;padding:4px 8px;border-bottom:1px solid var(--hair-2);color:var(--ink-2);font-variant-numeric:tabular-nums;}
+  .pg-mini td:first-child{text-align:left;color:var(--ink);}
+  .pg-settings .sbox{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);box-shadow:var(--shadow-1);padding:14px;}
+  /* Item de configuração (linha de lista editável): separação visual padronizada — usado na aba
+     Execução da Página, nos parâmetros do Pipeline e nas Funções. Barra de acento + sombra leve. */
+  .cfg-item{background:var(--surface);border:1px solid var(--hair);border-left:3px solid var(--navy);
+    border-radius:9px;padding:12px 14px;box-shadow:var(--shadow-1);}
+  .cfg-tabs{display:flex;gap:2px;margin-bottom:12px;border-bottom:1px solid var(--hair);}
+  .cfg-tabs button{flex:1;border:none;background:transparent;padding:8px 10px;font-size:12px;font-weight:600;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;}
+  .cfg-tabs button.on{color:var(--navy);border-bottom-color:var(--navy);}
+  .cfg-tabs button:hover{color:var(--ink);}
+  .pg-settings label.fld{display:block;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+  .pg-settings input.nm{width:100%;border:1px solid var(--hair);border-radius:6px;padding:8px 10px;font-size:13.5px;font-family:"Space Grotesk";font-weight:600;color:var(--ink);}
+  .togg{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hair-2);font-size:13px;}
+  .togg:last-of-type{border-bottom:none;}
+  .sw{width:34px;height:20px;border-radius:20px;background:#d6dde6;position:relative;transition:.15s;flex:none;cursor:pointer;}
+  .sw.on{background:var(--lime);}
+  .sw i{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.2);transition:.15s;}
+  .sw.on i{left:16px;}
+  .pg-canvas.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-content:start;}
+  .pg-canvas.grid.over{border-color:var(--lime);background:var(--soft-lime);}
+  .pg-canvas.grid .pg-block{margin-bottom:0;}
+  .vdot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;vertical-align:middle;}
+  .wseg{display:inline-flex;border:1px solid var(--hair);border-radius:5px;overflow:hidden;margin-right:5px;}
+  .wseg button{border:none;background:var(--surface);padding:0 7px;height:24px;font-size:10.5px;color:var(--ink-2);border-right:1px solid var(--hair);width:auto;}
+  .wseg button:last-child{border-right:none;}
+  .wseg button.on{background:var(--navy-sup);color:#fff;}
+
+  /* ---- construtor de cubo (especialista, guiado, zero SQL) ---- */
+  .cstep{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);box-shadow:var(--shadow-1);margin-bottom:14px;}
+  .cstep .ch{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--hair-2);}
+  .cstep .ch .n{width:20px;height:20px;border-radius:50%;background:var(--lime);color:var(--navy);font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;flex:none;}
+  .cstep .ch h3{margin:0;font-family:"Space Grotesk";font-size:14px;font-weight:600;}
+  .cstep .ch .hint{margin-left:auto;font-size:11.5px;color:var(--ink-3);}
+  .cstep .cb{padding:14px 16px;}
+  .selrow{display:flex;gap:18px;flex-wrap:wrap;}
+  .selrow .f{display:flex;flex-direction:column;gap:4px;}
+  .selrow .f label{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);}
+  .selrow select{border:1px solid var(--hair);border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--surface);min-width:210px;}
+  .colpick{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+  .colchip{display:flex;align-items:center;gap:8px;border:1px solid var(--hair);background:var(--surface);border-radius:7px;padding:7px 11px;font-size:12.5px;color:var(--ink-2);}
+  .colchip .ty{font-size:10px;color:var(--ink-3);border:1px solid var(--hair);border-radius:4px;padding:0 5px;}
+  .colchip.on{border-color:var(--navy);background:var(--soft);color:var(--ink);}
+  .colchip.on .mk{background:#5b7aa8;}
+  .colchip .mk{width:9px;height:9px;border-radius:3px;border:1.5px solid #c3ccd8;flex:none;}
+  .colchip .rn{border:none;border-bottom:1px dashed var(--hair);background:none;font-family:inherit;font-size:12.5px;color:var(--navy);font-weight:600;width:96px;padding:1px 0;}
+  .medlist{display:flex;flex-direction:column;gap:9px;}
+  .medrow{display:grid;grid-template-columns:1.1fr 1fr 1fr auto auto;gap:9px;align-items:center;background:var(--soft);border:1px solid var(--hair);border-radius:7px;padding:9px 11px;}
+  .medrow input,.medrow select{border:1px solid var(--hair);border-radius:5px;padding:6px 8px;font-size:12.5px;font-family:inherit;color:var(--ink);background:var(--surface);width:100%;}
+  .medrow .expr{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:var(--ink-3);white-space:nowrap;}
+  .medrow .del{border:1px solid var(--hair);background:var(--surface);border-radius:5px;width:26px;height:26px;color:var(--ink-2);font-size:14px;line-height:1;}
+  .medrow .del:hover{color:#b23b43;border-color:#e6b4b8;}
+  .addmed{display:inline-flex;align-items:center;gap:7px;border:1px dashed var(--hair);background:var(--surface);border-radius:6px;padding:8px 12px;font-size:12.5px;color:var(--navy);font-weight:500;margin-top:10px;}
+  .addmed:hover{border-color:var(--lime);background:var(--soft-lime);}
+  .medhead{display:grid;grid-template-columns:1.1fr 1fr 1fr auto auto;gap:9px;padding:0 11px 2px;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);}
+
+  /* ---- execuções (runs / histórico, color code por nó) ---- */
+  .runrow{display:grid;grid-template-columns:118px 1fr 128px 70px 92px;gap:12px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--hair-2);cursor:pointer;font-size:13px;width:100%;border-left:none;border-right:none;border-top:none;background:var(--surface);text-align:left;}
+  .runrow:last-child{border-bottom:none;}
+  .runrow:hover{background:var(--soft);}
+  .runrow .rid{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--navy);}
+  .runrow .rwhen{font-size:12px;color:var(--ink-3);}
+  .runrow .rdur{font-variant-numeric:tabular-nums;color:var(--ink-2);text-align:right;}
+  .statuspill{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:6px;justify-self:start;}
+  .statuspill .d{width:7px;height:7px;border-radius:50%;}
+  .statuspill.ok{color:#2f6b46;background:#e9f6ee;} .statuspill.ok .d{background:#3c8a5e;}
+  .statuspill.falha{color:#a8353d;background:#fdeced;} .statuspill.falha .d{background:#c0444c;}
+  .statuspill.skip{color:#7a6a3c;background:#f6f1e1;} .statuspill.skip .d{background:#caa64a;}
+  /* `exec` = em execução. Classe própria (azul, pulsando): antes a lista pintava execução em
+     andamento com o verde de "ok", como se já tivesse terminado bem. */
+  .statuspill.exec{color:#2c527f;background:#e8f0fb;} .statuspill.exec .d{background:#4b7bc8;animation:pulso-exec 1.2s ease-in-out infinite;}
+  @keyframes pulso-exec{0%,100%{opacity:1;}50%{opacity:.28;}}
+  @media (prefers-reduced-motion:reduce){.statuspill.exec .d{animation:none;}}
+  .run-meta{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0 16px;}
+  .noderow{display:grid;grid-template-columns:14px 160px 1fr 86px;gap:13px;align-items:center;padding:11px 14px;border:1px solid var(--hair);border-left-width:3px;border-radius:7px;margin-bottom:9px;background:var(--surface);box-shadow:var(--shadow-1);}
+  .noderow.ok{border-left-color:#3c8a5e;} .noderow.falha{border-left-color:#c0444c;} .noderow.skip{border-left-color:#caa64a;}
+  .cdot{width:11px;height:11px;border-radius:50%;justify-self:center;}
+  .cdot.ok{background:#3c8a5e;} .cdot.falha{background:#c0444c;} .cdot.skip{background:#caa64a;}
+  .noderow .nn{font-family:"Space Grotesk";font-weight:600;font-size:13px;}
+  .noderow .nt{font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;}
+  .noderow .res{font-size:12.5px;color:var(--ink-2);}
+  .noderow .res b{color:var(--ink);font-weight:600;}
+  .noderow .res .err{color:#b23b43;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;}
+  .noderow .rdur{text-align:right;font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums;}
+  .reap{font-size:9.5px;color:#7a6a3c;background:#f6f1e1;border-radius:4px;padding:1px 6px;margin-left:7px;text-transform:uppercase;letter-spacing:.03em;}
+  .logbox{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;background:#0c1a30;color:#aeb9cc;border-radius:7px;padding:12px 13px;line-height:1.75;white-space:pre-wrap;}
+    /* .lmut carrega texto que importa (a ressalva "não é o log do motor" e o caminho do Parquet):
+     #6b7c97 dava 4,11:1 sobre o fundo fixo da caixa — abaixo de AA. #8b9bb5 dá 6,18:1. */
+  .logbox .lok{color:#9fd17e;} .logbox .lerr{color:#ff9aa0;} .logbox .lmut{color:#8b9bb5;}
+
+  /* ===== Execuções — LISTA (filtros + tabela) ===== */
+  .exec-h-acoes{margin-left:auto;display:flex;align-items:center;gap:10px;}
+  /* Resumo de hoje no cabeçalho da página: responde "algo falhou hoje?" sem depender do filtro. */
+  .exec-resumo-hoje{margin:6px 0 0;font-size:13px;color:var(--ink-2);}
+  .exec-resumo-hoje b{color:var(--ink);}
+
+  .exec-atualizado{font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums;}
+  /* Selo de auto-refresh: sem ele nada na tela dizia que a lista se atualiza sozinha. */
+  .exec-aovivo{margin-left:7px;font-size:10px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.04em;color:#2c527f;background:#e8f0fb;border-radius:20px;padding:2px 7px;}
+  /* flex-start: a dica da janela do período estica a coluna dele e, com flex-end, desalinhava a
+     linha de rótulos inteira. */
+  /* Grid em vez de flex-wrap: com contagem de 4 dígitos nos chips o flex empurrava o Período para
+     a segunda linha e deixava ~290px de vazio na primeira — a forma da barra mudava com o DADO. */
+  .exec-filtros{display:grid;grid-template-columns:200px minmax(460px,auto) auto auto 1fr;
+    align-items:start;gap:14px 16px;padding:12px 14px;border-bottom:1px solid var(--hair);}
+  @media (max-width:1340px){
+    .exec-filtros{grid-template-columns:200px auto auto;}
+  }
+  /* Alerta só no NÚMERO: a borda é a marca do chip selecionado, e dois sinais de borda no mesmo
+     grupo faziam o chip de falha parecer o ativo. */
+  .exec-chips .chip.alerta .cnt{color:#a8353d;font-weight:700;opacity:1;}
+  /* Sem opacity: .75 derrubava o número para 4,0:1 (abaixo de AA em 12,5px). O "·" já separa. */
+  .exec-chips .chip .cnt{font-variant-numeric:tabular-nums;font-weight:600;}
+  /* "· 0" esmaecido em vez de número ausente: sem nada, o vazio parecia "não sei quantos". */
+  .exec-chips .chip .cnt.zero{font-weight:400;color:var(--ink-3);}
+  /* Sub-abas do motor: recorte DENTRO da aba, em chips, na ordem do dado (setas entre elas). */
+  .sub-abas{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 4px;}
+  .sub-abas .chip{height:30px;box-sizing:border-box;padding:0 12px;cursor:pointer;}
+  .sub-abas .cnt{font-variant-numeric:tabular-nums;font-weight:600;}
+  .sub-abas .cnt.zero{font-weight:400;color:var(--ink-3);}
+  .sub-abas-seta{color:var(--ink-2);font-size:12px;}
+  .exec-sub{padding:0 14px;}
+  .exec-abas{padding:4px 14px 0;}
+  /* Oito abas não cabem em tela estreita: a régua rola em vez de cortar a última. */
+  .exec-abas .cfg-tabs{margin-bottom:0;overflow-x:auto;}
+  .exec-abas .cfg-tabs button{flex:1 0 auto;white-space:nowrap;}
+  /* Busca livre: linha própria, acima dos filtros — é o primeiro controle que se procura. */
+  .exec-busca{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px 0;}
+  .exec-busca input{flex:1 1 420px;max-width:640px;height:34px;box-sizing:border-box;
+    border:1px solid var(--hair);border-radius:7px;padding:0 11px;font-size:13px;font-family:inherit;
+    color:var(--ink);background:var(--surface);}
+  .exec-busca input:focus-visible{outline:2px solid var(--navy);outline-offset:1px;}
+  .exec-busca-dica{font-size:11.5px;color:var(--ink-2);}
+  .exec-busca-dica code{font-size:11px;}
+  .exec-filtro{display:flex;flex-direction:column;gap:5px;}
+  .exec-filtro > .eyebrow{margin:0;}
+  /* Altura igual em select, chip e botão da barra — a base dos controles tem de alinhar. */
+  .exec-filtros select,.exec-filtros .chip,.exec-limpar{height:32px;box-sizing:border-box;}
+  /* max-width no select de pipeline: nome longo esticava o campo e empurrava o Período para uma
+     segunda linha (a barra de filtros cabe em uma linha em 1440). */
+  .exec-filtro select{border:1px solid var(--hair);border-radius:7px;padding:0 9px;font-size:12.5px;font-family:inherit;color:var(--ink);background:var(--surface);max-width:200px;padding-right:26px;}
+  .exec-filtro select:focus-visible{outline:2px solid var(--navy);outline-offset:1px;}
+  /* Os chips de status são botões de filtro (single-select) — linha, não coluna. */
+  .exec-chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .exec-chips .chip{cursor:pointer;padding:0 12px;}
+  .exec-filtro-periodo .periodo{flex-wrap:wrap;align-items:center;}
+  .exec-filtros .periodo input{height:32px;box-sizing:border-box;}
+  /* A dica da janela resolvida é texto de apoio, não código (o mono do .periodo-hint destoa aqui). */
+  .exec-filtros .periodo-hint{font-family:inherit;font-size:11.5px;color:var(--ink-3);}
+  .exec-limpar{border:1px solid var(--hair);background:var(--surface);border-radius:7px;
+    padding:0 12px;font-size:12.5px;font-family:inherit;color:var(--ink-2);cursor:pointer;
+    white-space:nowrap;justify-self:end;}
+  .exec-limpar:hover{border-color:#c3ccd8;color:var(--navy);}
+  .exec-lista-vazia{padding:34px 16px;text-align:center;color:var(--ink-3);font-size:13px;}
+  .exec-erro-lista{padding:10px 14px;color:#a8353d;font-size:12.5px;}
+  /* A tabela tem muitas colunas e células sem quebra: em tela estreita ela precisa ROLAR dentro
+     do próprio card. Sem isso o `.dgrid` (overflow:hidden por causa do raio) cortava a coluna
+     Status — a mais importante da linha — em vez de deixar alcançá-la. */
+  /* `overflow:auto` COM altura limitada: sem o teto, o scrollport nunca rola na vertical (rola a
+     página) e o `thead` sticky não teria onde grudar. */
+  .exec-tabela-wrap{padding:0;overflow:auto;max-height:min(70vh,760px);}
+  /* O .card já é a moldura: a tabela dentro dele não repete borda/raio/sombra (card dentro de card). */
+  .exec-tabela{min-width:880px;border:none;border-radius:0;box-shadow:none;}
+  @media (max-width:1340px){
+    .exec-tabela thead th,.exec-tabela tbody td{padding-left:10px;padding-right:10px;}
+    .exec-cel-forte{display:inline-block;max-width:26ch;overflow:hidden;text-overflow:ellipsis;
+      white-space:nowrap;vertical-align:bottom;}
+  }
+  .exec-tabela thead th{position:sticky;top:0;z-index:1;}
+  /* Separador de dia: "o que rodou hoje" se lê pela estrutura, sem precisar filtrar. */
+  .exec-tabela tbody tr.exec-dia td{background:var(--soft);font-size:10.5px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--ink-3);padding:5px 14px;font-weight:600;}
+  .exec-cel-erro{display:block;font-size:11px;color:#a8353d;margin-top:2px;max-width:46ch;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* --- Corrida (cadeia de pipelines) na lista --- */
+  /* O agrupador fica ABAIXO do nome, em linha própria: o nome é o que se procura, e ao lado ele
+     disputaria a largura da coluna que já trunca o nome em telas estreitas. */
+  .exec-corrida-linha{display:flex;align-items:center;gap:8px;margin-top:4px;}
+  /* Chip azul-marinho (a cor de "navegar" do produto), nunca verde/vermelho: o chip é controle,
+     não desfecho. Aberto, ele inverte — o estado do acordeão se lê sem olhar o marcador. */
+  .exec-corrida-chip{display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:11px;
+    font-weight:600;line-height:1.5;letter-spacing:.01em;color:var(--navy);background:#eef3fa;
+    border:1px solid #d6e1f0;border-radius:20px;padding:1px 9px 1px 7px;cursor:pointer;
+    transition:background .12s,border-color .12s;}
+  .exec-corrida-chip:hover{background:#e2ebf7;border-color:#b9cbe6;}
+  .exec-corrida-chip[aria-expanded="true"]{background:var(--navy-sup);border-color:var(--navy-sup);color:#fff;}
+  .exec-corrida-caret{width:10px;height:10px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round;transition:transform .15s;}
+  .exec-corrida-chip[aria-expanded="true"] .exec-corrida-caret{transform:rotate(90deg);}
+  @media (prefers-reduced-motion:reduce){.exec-corrida-caret,.exec-corrida-chip{transition:none;}}
+  /* Composição das dependências, nas cores dos pontos da pill. Piso de 3px por parte: 1 falha em
+     37 não pode sumir no arredondamento. */
+  .exec-corrida-barra{display:inline-flex;gap:1px;width:64px;height:6px;border-radius:3px;
+    overflow:hidden;background:var(--hair);flex:none;}
+  .exec-corrida-barra .seg{flex-basis:0;min-width:3px;}
+  .exec-corrida-barra .seg.concluida{background:#3c8a5e;}
+  .exec-corrida-barra .seg.executando{background:#4b7bc8;}
+  .exec-corrida-barra .seg.falha{background:#c0444c;}
+  /* Corrida ABERTA vira um bloco: cabeçalho e filhas no mesmo fundo, filete marinho na mãe e
+     azul-acinzentado nas filhas. Filha recuada: a hierarquia se lê pela estrutura, não só pela ordem. */
+  .exec-tabela tbody tr.exec-corrida-aberta td,
+  .exec-tabela tbody tr.exec-filha td{background:#f6f8fb;}
+  .exec-tabela tbody tr.exec-corrida-aberta:hover td,
+  .exec-tabela tbody tr.exec-filha:hover td{background:#edf2f8;}
+  .exec-tabela tbody tr.exec-corrida-aberta td:first-child{box-shadow:inset 3px 0 0 var(--navy-700);}
+  .exec-tabela tbody tr.exec-filha td:first-child{padding-left:30px;box-shadow:inset 3px 0 0 #c9d5e6;}
+  .exec-filha .exec-cel-forte{font-size:13px;font-weight:500;}
+  /* Filete de DESFECHO no início da linha — não só na pill, que sai de vista em tela estreita.
+     Depois dos filetes de estrutura (mesma especificidade: o último vence), para o desfecho ganhar
+     do aninhamento. Concluída não leva filete: numa lista quase toda verde, ele seria só ruído. */
+  .exec-tabela tbody tr.linha-exec td:first-child{box-shadow:inset 3px 0 0 #4b7bc8;}
+  .exec-tabela tbody tr.linha-falha td:first-child{box-shadow:inset 3px 0 0 #c0444c;}
+  /* Mãe que não casa o filtro: está na tela como CONTEXTO da filha que casou. Esmaecida para não
+     se passar por resultado do filtro — mas legível, porque é ela que diz de que corrida se trata. */
+  .exec-tabela tbody tr.exec-contexto td{opacity:.72;}
+  /* A coluna de ações é estreita e não encolhe: era a última, e com o disparo agendado ocupando
+     meia tabela ela saía da área visível — o menu de "Executar de novo" ficava inalcançável sem
+     rolar a tabela de lado. */
+  .exec-tabela thead th:last-child,.exec-tabela tbody td.dg-acoes{width:44px;
+    padding-left:4px;padding-right:8px;}
+  /* O disparo agendado escreve uma frase longa ("agendada · Recarga mensal — bronze · <dataset>")
+     e esticava a tabela até jogar Usuário e Ações para fora da área visível — com o menu de
+     "Executar de novo" junto. `.dg-trunc` sozinha não bastava: ela só existe abaixo de 1340px, e
+     a coluna já estourava em 1440. Truncagem OPT-IN nesta célula desta tabela, em qualquer
+     largura, com o texto completo no `title`. */
+  /* 185px é o que faz a tabela caber em 1440 (medido: com 230 ela dava 1182 numa área de 1150, e
+     a coluna de ações encostava na borda). */
+  .exec-tabela tbody td.dg-trunc{max-width:185px;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;}
+  /* Enquanto a nova página/filtro carrega, o resultado antigo esmaece — não se lê dado velho
+     como se fosse o do filtro recém-escolhido. */
+  /* .7 e não .55: o dado antigo deve ficar visivelmente "em troca", não ilegível. */
+  .exec-tabela-wrap[data-carregando="true"]{opacity:.7;transition:opacity .12s;}
+  .exec-tabela{table-layout:auto;}
+  .exec-tabela td{white-space:nowrap;}
+  /* O nome é o título da linha: maior que o resto da grade (13px), para ganhar a primeira leitura. */
+  .exec-cel-forte{font-family:"Space Grotesk";font-weight:600;font-size:14.5px;line-height:1.35;
+    color:var(--ink);}
+  .exec-cel-mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--navy);}
+  .exec-cel-versao{font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums;}
+  /* Duração da mãe de corrida é a corrida INTEIRA: o rótulo diz isso na própria célula, senão ela
+     parece o tempo do pipeline da linha e as filhas (tempo próprio) parecem não somar com ela. */
+  .exec-dur-sub{display:block;font-size:10.5px;color:var(--ink-2);}
+  /* Filha que ainda não começou / não chegou a rodar: estado, não número — em itálico e apagado
+     para não ser lido como uma duração. */
+  .exec-tabela tbody td.exec-dur-espera{color:var(--ink-2);font-style:italic;}
+  /* Sublinhado na própria cor: com --hair o link ficava distinguível só por cor (1,2:1). */
+  .exec-cel-link{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--navy);border:none;background:none;
+    padding:0;cursor:pointer;text-decoration:underline;text-decoration-color:currentColor;
+    text-decoration-thickness:1px;text-underline-offset:3px;}
+  .exec-cel-link:hover{text-decoration-thickness:2px;}
+  .exec-cel-link:focus-visible{outline:2px solid var(--navy);outline-offset:2px;border-radius:3px;}
+
+  /* ===== Execuções — DETALHE (grafo em cima, dado do nó embaixo) ===== */
+  .exec-run-params{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px;}
+  .exec-run-params .chip{gap:6px;padding:5px 10px;font-size:12px;}
+  .exec-run-params .chip b{color:var(--ink);font-weight:600;}
+  .exec-detalhe{display:flex;flex-direction:column;gap:14px;}
+  .exec-aviso{background:#fdf7e3;border:1px solid #ecdca6;color:#7a6a3c;border-radius:var(--radius);padding:9px 13px;font-size:12.5px;}
+  /* Alerta de falha: faixa + botão "Ver o nó" (a faixa inteira como botão dava um controle cujo
+     nome acessível era o stack de erro). */
+  .exec-banner-falha{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;
+    background:#fdeced;border:1px solid #f1bcc0;color:#a8353d;border-radius:var(--radius);padding:11px 14px;font-size:13px;}
+  .exec-banner-falha .dot{width:9px;height:9px;border-radius:50%;background:#c0444c;flex:none;margin-top:5px;}
+  /* O erro completo mora na aba Erro; aqui é chamada, não despejo (evita banner de 6 linhas). */
+  .exec-banner-txt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .exec-banner-falha .pag-btn{margin-left:auto;flex:none;color:#a8353d;border-color:#f1bcc0;}
+  .exec-banner-falha .pag-btn:hover:not(:disabled){background:#fbdcdf;border-color:#e08b92;}
+  /* Alternador Grafo/Lista + legenda das cores de status dos nós. */
+  .exec-visao-barra{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .exec-visao{margin:0;border-bottom:none;gap:2px;}
+  .exec-visao button{flex:none;padding:6px 13px;border-bottom:2px solid transparent;}
+  .exec-legenda{margin-left:auto;display:flex;gap:13px;font-size:11px;color:var(--ink-3);}
+  .exec-legenda-item{display:inline-flex;align-items:center;gap:5px;}
+  .exec-legenda-item::before{content:"";width:8px;height:8px;border-radius:2px;flex:none;}
+  .exec-legenda-item.ok::before{background:#3c8a5e;}
+  .exec-legenda-item.falha::before{background:#c0444c;}
+  .exec-legenda-item.skip::before{background:#caa64a;}
+  .exec-legenda-item.exec::before{background:#4b7bc8;animation:pulso-exec 1.2s ease-in-out infinite;}
+  .exec-legenda-item.off::before{background:var(--hair-2);}
+  @media (prefers-reduced-motion:reduce){.exec-legenda-item.exec::before{animation:none;}}
+  /* O nó reaproveitado é VERDE (concluiu) com um selo âmbar; a legenda mostra os dois. */
+  .exec-legenda-item.reap::before{background:#3c8a5e;}
+  .exec-legenda-item.reap::after{content:"marca no card";font-size:9px;background:#f6f1e1;color:#7a6a3c;
+    border-radius:3px;padding:0 4px;margin-left:4px;text-transform:uppercase;letter-spacing:.03em;}
+  /* Lista de nós: reusa .noderow/.cdot (já no CSS do produto) como botão de seleção. */
+  /* Caixa rolável de verdade: com teto e sem moldura, a linha cortada no topo lia como conteúdo
+     vazando por baixo das abas. O teto cabe o caso comum (8 nós ≈ 424px) e o padding evita que o
+     anel de 3px do item selecionado seja recortado pelo scrollport. */
+  .exec-trilha{display:flex;flex-direction:column;max-height:clamp(300px,48vh,480px);overflow:auto;
+    padding:4px;border:1px solid var(--hair);border-radius:var(--radius);background:var(--soft);}
+  /* Identidade à esquerda, números à direita — como na .dgrid. Com a coluna do meio elástica,
+     a linha virava três ilhas separadas por ~400px de vazio. */
+  .exec-noderow{width:100%;text-align:left;font-family:inherit;cursor:pointer;padding:7px 12px;
+    margin-bottom:6px;grid-template-columns:14px minmax(150px,1fr) auto 86px;}
+  .exec-noderow .res{text-align:right;font-variant-numeric:tabular-nums;}
+  /* Dígitos alinhados na coluna de linhas — é exatamente o que a lista existe para comparar. */
+  .exec-noderow .res b{display:inline-block;min-width:7ch;text-align:right;}
+  /* .noderow foi escrito para filhos em bloco; aqui os filhos são <span> (dentro de um <button>),
+     então nome e tipo empilham só com display:block. */
+  .exec-noderow .nn{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .exec-noderow .nt{display:block;}
+  .exec-noderow .res{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .exec-noderow:hover{border-color:#b9c3d1;}
+  .exec-noderow.sel{border-color:var(--navy);box-shadow:0 0 0 3px rgba(0,32,80,.12),var(--shadow-2);}
+  .exec-noderow:focus-visible{outline:2px solid var(--navy);outline-offset:2px;}
+  .noderow.exec{border-left-color:#4b7bc8;} .cdot.exec{background:#4b7bc8;animation:pulso-exec 1.2s ease-in-out infinite;}
+  /* PENDENTE ≠ EM EXECUÇÃO. Os dois eram azuis: numa execução em andamento a lista inteira ficava
+     da mesma cor e o nó que trabalhava não se distinguia da fila atrás dele. Cinza é fila; azul
+     pulsando é onde o trabalho está acontecendo — a cor viva marca UM nó, não vinte. */
+  .noderow.off{border-left-color:var(--ink-3);} .cdot.off{background:var(--ink-3);}
+  /* Zoom/enquadrar FORA do canvas: como overlay no canto inferior esquerdo eles caíam sempre sobre
+     o último nó da primeira coluna — em 1180px tapavam o rótulo, e a área coberta não era clicável. */
+  .exec-canvas-barra{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-bottom:-4px;}
+  .exec-canvas-barra .pag-btn{padding:3px 10px;font-size:12px;}
+  .exec-canvas-dica{margin-right:auto;font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums;}
+  /* Alça nativa de altura (resize:vertical): o React Flow reenquadra sozinho via ResizeObserver. */
+  /* A altura vem inline (calculada pelo nº de linhas do grafo); aqui só o piso e a moldura. */
+  .exec-canvas{position:relative;min-height:260px;resize:vertical;overflow:hidden;
+    border:1px solid var(--hair);border-radius:var(--radius);box-shadow:var(--shadow-1);background:var(--surface);}
+  .exec-node{width:180px;background:var(--surface);border:1px solid var(--hair);border-radius:7px;
+    box-shadow:var(--shadow-1);cursor:pointer;overflow:hidden;transition:.12s;}
+  .exec-node:hover{border-color:#b9c3d1;}
+  .exec-node.sel{box-shadow:0 0 0 3px rgba(0,32,80,.12),var(--shadow-2);border-color:var(--navy);}
+  /* O CSS do React Flow zera o outline do nó focado — sem isto, navegar por Tab é às cegas. */
+  .exec-canvas .react-flow__node.selectable:focus-visible{outline:2px solid var(--navy);outline-offset:3px;border-radius:10px;}
+  .exec-node.orfao{border-style:dashed;}
+  .exec-node-bar{height:4px;background:var(--hair);}
+  .exec-node--ok .exec-node-bar,.exec-node--reap .exec-node-bar{background:#3c8a5e;}
+  .exec-node--falha .exec-node-bar{background:#c0444c;}
+  .exec-node--skip .exec-node-bar{background:#caa64a;}
+  /* Barra pulsando = o nó que está rodando AGORA. É o único elemento em movimento no canvas, de
+     propósito: com "pendente" também azul, um grafo de 24 nós abria com metade dos cards da mesma
+     cor e a pergunta "em que passo está?" não tinha resposta em lugar nenhum da tela. */
+  .exec-node--executando .exec-node-bar{background:#4b7bc8;animation:pulso-exec 1.2s ease-in-out infinite;}
+  .exec-node--executando{border-color:#8fb0e0;}
+  .exec-node--pendente .exec-node-bar{background:var(--hair-2);}
+  .exec-node-corpo{padding:7px 10px 8px;}
+  .exec-node-nome{font-family:"Space Grotesk";font-weight:600;font-size:12.5px;line-height:1.15;color:var(--ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .exec-node-tipo{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+  .exec-node-flag{background:var(--soft);border-radius:4px;padding:0 5px;letter-spacing:.02em;}
+  .exec-node-flag.reap{color:#7a6a3c;background:#f6f1e1;}
+  .exec-node-metricas{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--ink-2);margin-top:5px;font-variant-numeric:tabular-nums;}
+  .exec-node--skip .exec-node-metricas,.exec-node--pendente .exec-node-metricas{color:var(--ink-3);}
+  .exec-node--executando .exec-node-metricas{color:#2c527f;font-weight:600;}
+  @media (prefers-reduced-motion:reduce){
+    .exec-node--executando .exec-node-bar,.cdot.exec{animation:none;}
+  }
+  .react-flow__edge.exec-aresta-fria .react-flow__edge-path{stroke-dasharray:4 4;opacity:.55;}
+  /* Mapa da corrida: leitura `publicado` (espera a publicação no lake) é tracejada; a fonte tipo
+     pipeline, cheia. O traço é mais longo que o da aresta fria para os dois não se confundirem. */
+  .react-flow__edge.exec-aresta-publicado .react-flow__edge-path{stroke-dasharray:7 4;}
+  .corrida-legenda-arestas{display:inline-flex;flex-wrap:wrap;gap:14px;margin-left:auto;font-size:11.5px;color:var(--ink-2);}
+  .corrida-aresta{display:inline-flex;align-items:center;gap:6px;}
+  .corrida-aresta::before{content:"";width:22px;border-top:2px solid var(--ink-3);}
+  .corrida-aresta.pub::before{border-top-style:dashed;}
+  .corrida-painel{margin-top:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;}
+  .corrida-painel-h{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;}
+  .corrida-painel-id{display:flex;flex-direction:column;gap:2px;margin-right:auto;min-width:0;}
+  .corrida-painel-nome{font-family:"Space Grotesk";font-size:18px;font-weight:600;margin:0;color:var(--ink);overflow-wrap:anywhere;}
+  .corrida-painel-tempo{margin:0;font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums;}
+  .corrida-abrir{text-decoration:none;white-space:nowrap;}
+  .exec-corrida-mapa{font-size:11.5px;font-weight:600;color:var(--navy);text-decoration:none;white-space:nowrap;}
+  .exec-corrida-mapa:hover{text-decoration:underline;}
+  /* Faixa de família (fundo rotulado atrás dos nós). Não pega clique: o nó-faixa do React Flow
+     cobre a área dos cards, e sem isto o clique no card cairia nela. */
+  .exec-canvas .react-flow__node-faixa{pointer-events:none !important;}
+  .exec-faixa{border-radius:10px;background:var(--soft);border:1px dashed var(--hair);}
+  .exec-faixa-rotulo{display:block;padding:7px 10px;font-size:11px;font-weight:600;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .exec-canvas[data-zoom="baixo"] .exec-faixa-rotulo{font-size:16px;}
+  /* Caminho do pipeline selecionado: o resto esmaece, o caminho ganha cor e espessura. */
+  .exec-node.apagado{opacity:.28;}
+  .react-flow__edge.exec-aresta-apagada .react-flow__edge-path{opacity:.1;}
+  .react-flow__edge.exec-aresta-caminho .react-flow__edge-path{stroke:var(--navy);stroke-width:2;opacity:1;}
+  [data-theme="dark"] .react-flow__edge.exec-aresta-caminho .react-flow__edge-path{stroke:#8fb0e0;}
+  .corrida-controles{flex-wrap:wrap;gap:8px;}
+  /* Pressionado com cor EXPLÍCITA: `--navy-sup` é escuro e o texto azul sumia dentro dele. */
+  .corrida-controles .pag-btn[aria-pressed="true"]{background:#e6eef9;border-color:#9bb3d6;color:#1d3f6e;}
+  [data-theme="dark"] .corrida-controles .pag-btn[aria-pressed="true"]{background:#233550;border-color:#3a5680;color:#d6e4f7;}
+  /* O mapa não tem tabela de dado embaixo disputando a dobra (o detalhe tem): o canvas pode ser
+     alto. Sobrepõe a altura inline que o ExecGrafo calcula com teto de 42vh. */
+  .corrida-canvas .exec-canvas{height:clamp(420px,72vh,1100px) !important;}
+  .corrida-nota{margin:6px 0 0;font-size:12px;color:var(--ink-2);}
+  .corrida-vizinhos{display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
+  .corrida-vizinhos .eyebrow{margin-right:4px;}
+  .corrida-vizinho{cursor:pointer;font:inherit;font-size:12px;}
+  .corrida-vizinho-pub{color:var(--ink-3);}
+  /* Zoom baixo (grafo longo): detalhe minúsculo é ruído — some com tipo/métricas e aumenta o nome,
+     que com a cor da barra já responde "qual nó" e "em que estado". */
+  .exec-canvas[data-zoom="baixo"] .exec-node-tipo,
+  .exec-canvas[data-zoom="baixo"] .exec-node-metricas{display:none;}
+  /* Borda de 1px some quando o zoom a reduz a 0,7px: o card perdia o contorno inferior e parecia
+     cortado. */
+  .exec-canvas[data-zoom="baixo"] .exec-node{border-color:#b9c3d1;}
+  /* Altura fixa igual à do nó completo (~64px): sem isto o card "encolhia" ao esconder o detalhe
+     e parecia cortado no meio. */
+  .exec-canvas[data-zoom="baixo"] .exec-node-nome{font-size:15px;line-height:1.3;white-space:normal;}
+  .exec-canvas[data-zoom="baixo"] .exec-node-corpo{padding:10px;min-height:44px;display:flex;align-items:center;}
+  /* Atribuição do React Flow fora do caminho da alça de resize do canvas. */
+  .exec-canvas .react-flow__attribution{right:18px;bottom:2px;}
+  .exec-painel{display:flex;flex-direction:column;min-height:220px;}
+  .exec-painel-h{flex-wrap:wrap;gap:10px;}
+  .exec-localizar{font-size:11.5px;font-weight:600;}
+  .exec-painel-meta{display:flex;gap:12px;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;}
+  .exec-painel-abas{margin:0 0 0 auto;border-bottom:none;gap:2px;}
+  .exec-painel-abas button{flex:none;padding:6px 12px;border-bottom:2px solid transparent;}
+  .exec-painel-corpo{padding:12px 14px;}
+  .exec-painel-vazio{padding:26px 2px;text-align:center;color:var(--ink-3);font-size:12.5px;}
+  .exec-painel-erro-carga{color:#a8353d;font-size:12.5px;padding:8px 0;}
+  /* A grade usa a largura inteira da página (antes: coluna de 326px) e o cabeçalho fica fixo. */
+  .exec-grade{max-height:48vh;overflow:auto;border:1px solid var(--hair);border-radius:var(--radius);}
+  .exec-grade table.obs td{white-space:nowrap;}
+  /* Com 1–3 colunas a tabela de 100% esticava o valor para longe do cabeçalho: a última coluna
+     (espaçadora) absorve a sobra. */
+  .exec-obs th.espaco,.exec-obs td.espaco{width:100%;}
+  /* Cabeçalho da grade na MESMA língua de .dgrid thead th e .no-preview-grade th (o preview do
+     Studio): o navy sólido do table.obs virava faixa saturada no escuro e reprovava contraste.
+     box-shadow inset em vez de border-bottom porque a th é sticky com border-collapse. */
+  /* Seletor com `table.obs.exec-obs`: `table.obs th` é mais específico que `.exec-obs th` e
+     mantinha o navy sólido. */
+  table.obs.exec-obs th{background:var(--soft);color:var(--ink-2);font-size:10.5px;font-weight:600;
+    letter-spacing:.05em;text-transform:uppercase;box-shadow:inset 0 -1px 0 var(--hair);}
+  table.obs.exec-obs tr:nth-child(even) td{background:transparent;}
+  table.obs.exec-obs tbody tr:hover td{background:var(--soft);}
+  /* Coluna numérica: à direita e com dígitos de largura fixa — é assim que se confere valor. */
+  .exec-obs td.num,.exec-obs th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .exec-grade-pe{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 2px 0;font-size:11.5px;color:var(--ink-2);}
+  .exec-grade-acoes{display:inline-flex;align-items:center;gap:10px;}
+  .exec-grade-limite{display:inline-flex;align-items:center;gap:6px;}
+  .exec-grade-pe .pag-btn{padding:4px 10px;font-size:11.5px;}
+  /* NULL e texto vazio: distinguíveis entre si e do dado real (o `title` diz qual é). */
+  .exec-obs td.cel-vazia{color:var(--ink-3);font-style:italic;}
+  /* Foco visível nas caixas roláveis (elas são focáveis para serem alcançáveis por teclado). */
+  .exec-tabela-wrap:focus-visible,.exec-grade:focus-visible,.exec-erro-pre:focus-visible,
+  .exec-painel-corpo:focus-visible{outline:2px solid var(--navy);outline-offset:2px;}
+  .exec-grade-limite select{border:1px solid var(--hair);border-radius:6px;padding:3px 6px;font-size:11.5px;font-family:inherit;
+    color:var(--ink-2);background:var(--surface);}
+  .exec-erro-pre{margin:0;padding:11px 13px;background:#fbeaea;border:1px solid #f0bcbc;border-radius:var(--radius);font-size:12px;
+    color:#8a1f1f;white-space:pre-wrap;overflow:auto;max-height:40vh;}
+
+  /* ---- listagem genérica de cadastros (CRUD) ---- */
+  .lc-bar{display:flex;align-items:center;margin-bottom:14px;font-size:12.5px;color:var(--ink-3);}
+  .lc-list{overflow:hidden;}
+  .lc-row{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--hair-2);}
+  .lc-row:last-child{border-bottom:none;}
+  .lc-row:hover{background:var(--soft);}
+  .lc-main{flex:1;min-width:0;cursor:pointer;}
+  .lc-nome{font-family:"Space Grotesk";font-weight:600;font-size:14px;letter-spacing:-.01em;}
+  .lc-meta{font-size:12px;color:var(--ink-3);margin-top:2px;}
+  .lc-acts{display:flex;gap:7px;flex:none;}
+  .lc-acts button{border:1px solid var(--hair);background:var(--surface);border-radius:6px;padding:6px 11px;font-size:12.5px;color:var(--ink-2);}
+  .lc-acts button:hover{border-color:#c3ccd8;color:var(--navy);}
+  .lc-acts button.del:hover{color:#b23b43;border-color:#e6b4b8;}
+  .lc-empty{padding:46px;text-align:center;color:var(--ink-3);}
+  .lc-empty .big{font-family:"Space Grotesk";font-size:15px;color:var(--ink-2);margin-bottom:4px;}
+
+  /* ---- GridLista: listagem em grid de cards (componente único de listagem) ---- */
+  /* ---- data grid (tabela) de listagem ---- */
+  .dgrid{width:100%;border-collapse:collapse;font-size:13px;background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-1);}
+  .dgrid thead th{text-align:left;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:9px 14px;border-bottom:1px solid var(--hair);background:var(--soft);white-space:nowrap;}
+  .dgrid tbody td{padding:10px 14px;border-bottom:1px solid var(--hair-2);color:var(--ink-2);vertical-align:middle;}
+  .dgrid tbody tr:last-child td{border-bottom:none;}
+  .dgrid tbody tr.clic{cursor:pointer;}
+  .dgrid tbody tr.clic:hover td{background:var(--soft);}
+  .dgrid .dg-nome{font-family:"Space Grotesk";font-weight:600;font-size:13.5px;color:var(--ink);letter-spacing:-.01em;}
+  .dgrid .dg-nome .dg-sub{display:block;font-family:inherit;font-weight:400;font-size:11.5px;color:var(--ink-3);margin-top:1px;}
+  /* Coluna numérica à direita com dígitos de largura fixa — o que já valia em .agd-lista/.agd-runs
+     passa a valer no componente de listagem padrão (comparar duração/versão exige alinhamento). */
+  .dgrid td.num,.dgrid th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .dgrid .dg-acth{text-align:right;}
+  .dgrid .dg-acts{text-align:right;white-space:nowrap;}
+  .dgrid .dg-acts button{border:1px solid var(--hair);background:var(--surface);border-radius:6px;padding:5px 11px;font-size:12.5px;color:var(--ink-2);cursor:pointer;margin-left:6px;}
+  .dgrid .dg-acts button:hover{border-color:#c3ccd8;color:var(--navy);}
+  /* Excluir tinha exatamente o mesmo peso de Editar: a ação irreversível é a mais discreta em
+     repouso e só se declara vermelha na intenção. */
+  .dgrid .dg-acts button.del{border-color:transparent;color:var(--ink-3);}
+  .dgrid .dg-acts button.del:hover{border-color:#e0b4b8;background:#fdf2f3;color:#9a2530;}
+  [data-theme="dark"] .dgrid .dg-acts button.del:hover{border-color:#5d3036;background:#2b1a1d;color:#f0a3a8;}
+  .dgrid .dg-acts button.del:hover{color:#b23b43;border-color:#e6b4b8;}
+  .dgrid .dg-acts select{margin-right:6px;}
+
+  /* ---- detalhe do pipeline: painéis redimensionáveis ---- */
+  .sd-head{display:flex;align-items:flex-start;gap:16px;}
+  .sd-actions{margin-left:auto;display:flex;align-items:center;gap:10px;flex:none;}
+  /* barra de adição de nós (só os add-*; criação/abertura/admin foram removidos) */
+  .sd-tools{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;}
+  .sd-tools .add{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--hair);background:var(--soft);
+    border-radius:6px;padding:6px 11px;font-size:12.5px;color:var(--navy);font-weight:500;}
+  .sd-tools .add:hover{border-color:var(--lime);background:var(--soft-lime);}
+
+  /* ===== Editor: canvas full + paleta FLUTUANTE dentro dele (estilo Langflow) ===== */
+  /* Altura do editor acompanha a janela (com piso e teto) em vez dos 660px fixos: num notebook de
+     820px de altura o canvas fixo empurrava metade de si para fora da tela, e num monitor grande
+     sobrava área morta embaixo. */
+  .sd-shell{position:relative;height:clamp(420px,calc(100vh - 268px),900px);border:1px solid var(--hair);
+    border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-1);background:var(--surface);}
+  .sd-shell .sd-canvas{position:absolute;inset:0;height:100%;min-height:0;resize:none;border:none;border-radius:0;box-shadow:none;overflow:hidden;}
+  /* paleta sobreposta no canto sup. esquerdo do canvas */
+  .sd-palette{position:absolute;top:14px;left:14px;z-index:5;width:212px;max-height:calc(100% - 28px);
+    display:flex;flex-direction:column;gap:7px;padding:11px;overflow:auto;
+    background:var(--surface);border:1px solid var(--hair);border-radius:12px;box-shadow:var(--shadow-2);}
+  .sd-palette-busca{display:flex;align-items:center;gap:7px;border:1px solid var(--hair);background:var(--soft);
+    border-radius:8px;padding:6px 10px;color:var(--ink-3);}
+  .sd-palette-busca input{border:none;background:none;outline:none;font-size:12.5px;color:var(--ink);width:100%;font-family:inherit;}
+  .sd-palette-grupo{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:5px 2px 0;}
+
+  .palitem{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:1px solid var(--hair);background:var(--surface);
+    border-radius:9px;padding:8px 11px;font-size:12.5px;color:var(--ink);font-weight:600;cursor:grab;
+    box-shadow:var(--shadow-1);transition:border-color .12s,box-shadow .12s,transform .04s;font-family:inherit;}
+  .palitem:hover{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.18),var(--shadow-1);}
+  .palitem:active{cursor:grabbing;transform:translateY(1px);}
+  .palitem-rot{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .palitem-ic{display:inline-flex;width:24px;height:24px;align-items:center;justify-content:center;
+    border-radius:7px;color:#fff;font-size:14px;flex:none;}
+  .palitem-ic--fonte{background:#3b82f6;}
+  .palitem-ic--sql{background:#10b981;}
+  .palitem-ic--juntar{background:#8b5cf6;}
+  .palitem-ic--filtrar{background:#f59e0b;}
+  .palitem-ic--agrupar{background:#06b6d4;}
+  .palitem-ic--comparacao{background:#ec4899;}
+  .palitem-ic--python{background:#6366f1;}
+  .palitem-ic--saida{background:#475569;}
+  .palitem-ic--escrita_sql{background:#0d9488;}
+  /* Sem a cor do chip o ícone (traço branco) fica branco no branco: o item aparece sem ícone
+     nenhum. Mesmo rosa-vinho do card do nó (.nopipe--email) — a paleta e o canvas identificam
+     o tipo pela mesma cor. */
+  .palitem-ic--email{background:#be123c;}
+  .palitem-ic--http{background:#ea580c;}
+  /* `ingestao` — mesmo marrom-terra do card (.nopipe--ingestao). Esquecer esta linha é
+     o defeito descrito no comentário acima, e ele já aconteceu duas vezes: tipo de nó novo SEM
+     `.palitem-ic--<tipo>` aparece na paleta como um botão em branco. */
+  .palitem-ic--ingestao{background:#a16207;}
+  /* botão de ação (Reorganizar): separado, tom neutro */
+  .palitem--acao{margin-top:5px;color:var(--ink-2);cursor:pointer;}
+  .palitem--acao:active{transform:translateY(1px);}
+  .palitem-ic--reorg{background:var(--ink-3);}
+  /* versão (caption) flutua no rodapé direito do canvas (minimap removido) */
+  /* Sobe acima da marca do React Flow (que fica colada no canto) e cresce para 12px: era 11px em
+     --ink-3 colidindo com a atribuição, e "versão atual: v102" é dado, não rodapé decorativo. */
+  .sd-shell .sd-versao{position:absolute;right:14px;bottom:26px;z-index:5;font-size:12px;color:var(--ink-2);
+    background:var(--surface);border:1px solid var(--hair);border-radius:6px;padding:4px 10px;box-shadow:var(--shadow-1);
+    font-variant-numeric:tabular-nums;}
+  /* `montante_publica`: mesma caixa da legenda de versão, no canto de cima — é marca do
+     pipeline inteiro, não de um nó, e decide se a corrida move ponteiro no lake. */
+  .sd-shell .sd-montante{position:absolute;right:14px;top:12px;z-index:5;display:flex;align-items:center;gap:6px;
+    font-size:12px;color:var(--ink-2);background:var(--surface);border:1px solid var(--hair);border-radius:6px;
+    padding:4px 10px;box-shadow:var(--shadow-1);cursor:pointer;}
+  .sd-shell .react-flow__attribution{background:transparent;font-size:9px;opacity:.55;}
+
+  /* ===== Paginação (histórico de execuções) ===== */
+  .paginacao{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 4px 4px;}
+  .pag-btn{border:1px solid var(--hair);background:var(--surface);border-radius:7px;padding:6px 13px;font-size:12.5px;
+    color:var(--navy);font-weight:600;cursor:pointer;font-family:inherit;}
+  .pag-btn:hover:not(:disabled){border-color:var(--lime);background:var(--soft-lime);}
+  .pag-btn:disabled{opacity:.45;cursor:default;}
+  /* Atalho de valor JÁ escolhido (ex.: amostra da prévia). Borda + fundo, nunca só a cor do texto:
+     "selecionado" indicado apenas por cor não sobrevive a quem não distingue as duas. */
+  .pag-btn.is-ativo{border-color:var(--navy);background:var(--soft);color:var(--navy);font-weight:700;
+    box-shadow:inset 0 0 0 1px var(--navy);}
+  /* Linha de atalhos dentro do modal (abaixo do campo). */
+  .amostra-atalhos{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .amostra-atalhos .pag-btn{padding:5px 11px;font-variant-numeric:tabular-nums;}
+  .pag-info{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;}
+
+  /* ===== Modal de execução: campos de parâmetro ===== */
+  .exec-params{display:flex;flex-direction:column;gap:11px;margin:4px 0 14px;}
+  .exec-param{display:flex;flex-direction:column;gap:4px;}
+  .exec-param-rot{font-size:12px;color:var(--ink-2);font-weight:600;}
+  .exec-param-rot code{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--ink-3);background:var(--soft);border-radius:4px;padding:1px 5px;font-weight:400;}
+  .exec-param-obg{color:#c0444c;}
+  .exec-param input,.exec-param select{border:1px solid var(--hair);border-radius:7px;padding:8px 10px;font-size:13px;
+    font-family:inherit;color:var(--ink);background:var(--surface);width:100%;box-sizing:border-box;}
+  .exec-param input:focus,.exec-param select:focus{outline:none;border-color:var(--navy);}
+  .exec-erro{margin:0 0 12px;font-size:12.5px;color:#a5333b;font-weight:600;}
+  .ver-ativa{font-size:11px;color:#5f8a2e;font-weight:700;}
+
+  /* ===== Modal de confirmação (exclusão de nó) ===== */
+  .modal-fundo{position:fixed;inset:0;z-index:50;background:rgba(10,20,40,.42);display:flex;align-items:center;justify-content:center;}
+  .modal-caixa{background:var(--surface);border:1px solid var(--hair);border-radius:14px;box-shadow:var(--shadow-2);
+    padding:22px 24px;max-width:440px;width:90%;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;}
+  .modal-caixa h3{margin:0 0 8px;font-family:"Space Grotesk",sans-serif;font-size:17px;color:var(--ink);flex:0 0 auto;}
+  .modal-caixa p{margin:0 0 14px;font-size:13.5px;color:var(--ink-2);line-height:1.5;flex:0 0 auto;}
+  .modal-acoes{display:flex;justify-content:flex-end;gap:9px;flex:0 0 auto;}
+  .modal-acoes .btn-sec{border:1px solid var(--hair);background:var(--surface);color:var(--ink-2);border-radius:8px;padding:8px 15px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .modal-acoes .btn-sec:hover{border-color:var(--ink-3);color:var(--ink);}
+  .modal-acoes .btn-perigo{border:none;background:#c0444c;color:#fff;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .modal-acoes .btn-perigo:hover{background:#a5333b;}
+
+  /* ===== Paleta recolhível + ação separada (Reorganizar) ===== */
+  .sd-palette{display:flex;flex-direction:column;}
+  .sd-palette-top{display:flex;align-items:center;gap:6px;}
+  .sd-palette-top .sd-palette-busca{flex:1;}
+  .sd-palette-colapsar{flex:none;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;
+    border:1px solid var(--hair);background:var(--surface);border-radius:8px;color:var(--ink-2);cursor:pointer;}
+  .sd-palette-colapsar:hover{border-color:var(--ink-3);color:var(--ink);}
+  .sd-palette-itens{display:flex;flex-direction:column;gap:7px;overflow:auto;min-height:0;}
+  /* Duas ações de arranjo (camadas / sem cruzar linhas): empilhadas, porque o rótulo é a única
+     coisa que as distingue — lado a lado numa coluna de ~200px ambos truncariam. */
+  .sd-palette-rodape{margin-top:9px;padding-top:9px;border-top:1px solid var(--hair);
+    display:flex;flex-direction:column;gap:6px;}
+  .sd-acao{display:flex;align-items:center;gap:8px;width:100%;border:1px dashed var(--hair);background:transparent;
+    border-radius:8px;padding:7px 10px;font-size:12px;color:var(--ink-2);font-weight:600;cursor:pointer;font-family:inherit;}
+  .sd-acao:hover{border-color:var(--navy);color:var(--navy);}
+  /* botão de reabrir a paleta quando recolhida */
+  .sd-palette-abrir{position:absolute;top:14px;left:14px;z-index:5;width:38px;height:38px;display:inline-flex;
+    align-items:center;justify-content:center;border:1px solid var(--hair);background:var(--surface);border-radius:10px;
+    color:var(--navy);cursor:pointer;box-shadow:var(--shadow-2);font-size:18px;}
+  .sd-palette-abrir:hover{border-color:var(--lime);}
+
+  /* ===== Realce de :param no código ===== */
+  .cm-param{color:#9d4edd;font-weight:700;}
+  [data-theme="dark"] .cm-param{color:#c792ea;}
+
+  /* ===== Code area colapsável (abre só ao clicar; redimensionável) ===== */
+  .no-code-abrir{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--hair);background:var(--soft);
+    border-radius:7px;padding:7px 11px;font-size:12px;font-weight:600;color:var(--navy);cursor:pointer;font-family:inherit;align-self:flex-start;}
+  .no-code-abrir:hover{border-color:var(--lime);background:var(--soft-lime);}
+  /* Janela flutuante de código: sai do card, vida própria (portal no body). Tamanho/posição vêm
+     100% de `useJanelaGeometria` (JS) — as 8 alças `.jf-alca-*` cobrem todas as bordas/cantos,
+     o que o `resize` nativo do CSS não dá (só um canto). */
+  .code-janela{position:fixed;z-index:60;overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column;
+    background:var(--surface);border:1px solid var(--hair);border-radius:12px;box-shadow:var(--shadow-2);}
+
+  /* Alças de redimensionar — tiras finas nas bordas, quadrados pequenos nos cantos. Ficam 100%
+     DENTRO do limite da janela (não centradas na borda): `.code-janela` tem `overflow:hidden` p/
+     recortar o corpo nos cantos arredondados, e uma alça meio-pra-fora ficaria com metade da área
+     clicável cortada (inconsistente/frágil ao arrastar). */
+  .jf-alca{position:absolute;z-index:2;}
+  .jf-alca-n,.jf-alca-s{left:10px;right:10px;height:8px;cursor:ns-resize;}
+  .jf-alca-n{top:0;}
+  .jf-alca-s{bottom:0;}
+  .jf-alca-e,.jf-alca-w{top:10px;bottom:10px;width:8px;cursor:ew-resize;}
+  .jf-alca-e{right:0;}
+  .jf-alca-w{left:0;}
+  .jf-alca-ne,.jf-alca-nw,.jf-alca-se,.jf-alca-sw{width:14px;height:14px;}
+  .jf-alca-ne{top:0;right:0;cursor:nesw-resize;}
+  .jf-alca-nw{top:0;left:0;cursor:nwse-resize;}
+  .jf-alca-se{bottom:0;right:0;cursor:nwse-resize;}
+  .jf-alca-sw{bottom:0;left:0;cursor:nesw-resize;}
+  .code-janela-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px 9px 14px;
+    background:var(--soft);border-bottom:1px solid var(--hair);}
+  .code-janela-tit{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13px;color:var(--ink);}
+  .code-janela-x{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:none;
+    background:none;color:var(--ink-3);cursor:pointer;border-radius:6px;font-size:14px;}
+  .code-janela-x:hover{background:#fdeaea;color:#c0444c;}
+  .code-janela-corpo{flex:1;min-height:0;overflow:auto;}
+  .code-janela-corpo .cm-editor{height:100%;}
+  .code-janela-rodape{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:9px 12px;border-top:1px solid var(--hair);background:var(--soft);}
+  .code-janela-aviso{font-size:11.5px;color:#c0444c;font-weight:600;margin-right:auto;}
+  .code-janela-salvar{border:none;background:var(--navy-sup);color:#fff;font-weight:700;font-size:12.5px;border-radius:8px;
+    padding:7px 18px;cursor:pointer;font-family:inherit;}
+  .code-janela-salvar:hover{background:#06306e;}
+  .code-janela-salvar:disabled{opacity:.45;cursor:default;}
+  /* Janela de preview (reusa .code-janela): grade preenche o corpo e rola dentro. Altura inicial
+     vem de `useJanelaGeometria` (PreviewJanela), não daqui. */
+  .prev-corpo{padding:0;display:flex;flex-direction:column;}
+  .prev-corpo .no-preview-grade{flex:1;max-height:none;height:100%;border:none;border-radius:0;}
+  .prev-estado{margin:0;padding:16px;font-size:12px;color:var(--ink-3);}
+  .prev-corpo .no-preview-erro{margin:12px;}
+
+  /* ===== Funções no nó (escalável: busca + lista rolável) ===== */
+  .no-func-busca{border:1px solid var(--hair);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;
+    background:var(--surface);color:var(--ink);margin-bottom:4px;width:100%;box-sizing:border-box;}
+  .no-func-busca:focus{outline:none;border-color:var(--navy);}
+  /* dropdown multi-select */
+  .no-func-dd{position:relative;}
+  .no-func-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;border:1px solid var(--hair);
+    background:var(--surface);border-radius:7px;padding:7px 10px;font-size:12px;color:var(--ink);cursor:pointer;font-family:inherit;}
+  .no-func-trigger:hover{border-color:var(--navy);}
+  .no-func-trigger-txt{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* selo "fx": habilita/abre a listagem de funções */
+  .no-func-fx{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:18px;
+    padding:0 5px;font-family:"Space Grotesk",serif;font-style:italic;font-weight:800;font-size:11px;letter-spacing:-.02em;
+    color:#fff;background:var(--navy-sup);border-radius:5px;}
+  .no-func-pop{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;background:var(--surface);
+    border:1px solid var(--hair);border-radius:8px;box-shadow:var(--shadow-2);padding:6px;}
+  .no-func-tag{display:inline-flex;align-items:center;font-size:11px;color:var(--navy);background:var(--soft-lime);
+    border-radius:5px;padding:2px 7px;}
+  .no-func-sel{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px;}
+  .no-func-lista{display:flex;flex-direction:column;gap:2px;max-height:160px;overflow:auto;}
+  .no-func-item{display:flex;align-items:center;gap:7px;padding:4px 6px;border-radius:5px;font-size:12px;color:var(--ink-2);cursor:pointer;}
+  .no-func-item:hover{background:var(--soft);}
+  .no-func-item.on{color:var(--ink);font-weight:600;}
+  .no-func-item input{margin:0;flex:none;}
+  .no-func-nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .no-func-auto{flex:none;font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#5f8a2e;
+    background:var(--soft-lime);border-radius:4px;padding:1px 5px;}
+  .no-func-vazio{padding:6px;font-size:11.5px;color:var(--ink-3);}
+
+  /* ===== Cabeçalho compacto do detalhe + Executar flutuante no canvas ===== */
+  .page-head--compacta{padding-top:14px;padding-bottom:10px;}
+  .sd-head--compacta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .sd-head--compacta .display{font-size:21px;margin:0;}
+  .link-back--inline{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;
+    border:1px solid var(--hair);background:var(--surface);border-radius:8px;color:var(--ink-2);font-size:15px;flex:none;}
+  .link-back--inline:hover{border-color:var(--ink-3);color:var(--ink);}
+  .meta-inline{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--ink-3);margin-left:4px;flex-wrap:wrap;}
+  .meta-inline b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:700;}
+  /* dropdown rico de versão no cabeçalho (estilo do sistema) */
+  .ver-dd{position:relative;display:inline-flex;}
+  .ver-dd-trigger{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--hair);background:var(--surface);
+    border-radius:8px;padding:5px 10px;font-size:12.5px;color:var(--ink);font-family:inherit;font-weight:600;cursor:pointer;}
+  .ver-dd-trigger b{font-variant-numeric:tabular-nums;}
+  .ver-dd-trigger:hover{border-color:#10b981;}
+  .ver-dd-trigger:disabled{opacity:.55;cursor:default;}
+  .ver-dd-trigger .ic{width:14px;height:14px;color:var(--ink-3);}
+  .ver-dd-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:340px;max-height:340px;overflow:auto;
+    background:var(--surface);border:1px solid var(--hair);border-radius:10px;box-shadow:var(--shadow-2);padding:5px;}
+  /* A linha ganhou uma 2ª linha (nota de mudança) → passa a empilhar. */
+  .ver-row{display:flex;flex-direction:column;align-items:stretch;gap:3px;width:100%;text-align:left;border:none;
+    background:none;cursor:pointer;padding:7px 9px;border-radius:7px;font-family:inherit;font-size:12px;color:var(--ink-2);}
+  .ver-row-topo{display:flex;align-items:center;gap:8px;width:100%;}
+  .ver-row-nota{display:block;padding-left:38px;color:var(--ink-2);font-size:11.5px;line-height:1.35;
+    overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+  .ver-row:hover{background:var(--soft);}
+  .ver-row.on{background:rgba(16,185,129,.10);}
+  .ver-row-num{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;flex:none;min-width:38px;}
+  .ver-row-data{margin-left:auto;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .ver-row-exec{color:var(--ink-3);white-space:nowrap;flex:none;}
+  /* badges de status/marca da versão */
+  .ver-badge{flex:none;font-size:10px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;border-radius:5px;padding:2px 6px;}
+  .ver-badge.st-publicada{color:#0f7a52;background:#dcf5ea;}
+  .ver-badge.st-rascunho{color:#6b4e00;background:#fdf3da;}
+  .ver-badge.st-arquivada{color:var(--ink-3);background:var(--soft);}
+  /* #10b981 com texto branco dava 2,3:1 — o badge mais importante da lista era o menos legível. */
+  .ver-badge.ativa{color:#fff;background:#0b7355;}
+  .ver-badge.ultima{color:#1d4ed8;background:#dbe7ff;}
+  .ver-aviso{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;color:#6b4e00;
+    background:#fdf6e7;border:1px solid #f0ddb0;border-radius:6px;padding:3px 9px;}
+  .sd-grafo-wrap{position:relative;}
+  .pad--editor{position:relative;}
+  /* As ações do editor (Salvar/Executar/Publicar) ficam numa faixa STICKY acima do canvas: como
+     `position:absolute` o botão saía da tela ao rolar num notebook e cobria a borda do banner de
+     erro logo abaixo. */
+  .sd-acoes-flutuante{position:sticky;top:0;z-index:7;display:flex;justify-content:flex-end;gap:8px;
+    padding:0 0 10px;background:linear-gradient(var(--bg) 70%,transparent);}
+
+  /* nome do nó em leitura (arrastável); 2 cliques liberam edição */
+  .nopipe-nome--ro{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    padding:3px 6px;border:1px solid transparent;border-radius:6px;cursor:grab;user-select:none;}
+  .nopipe-nome--ro:hover{background:rgba(0,32,80,.06);}
+
+  /* ===== Nó custom do editor (forma Langflow, cores cFlow) ===== */
+  .nopipe{width:300px;background:var(--surface);border:1px solid var(--hair);border-radius:16px;
+    box-shadow:0 0 15px -3px rgba(0,32,80,.10),0 0 6px -4px rgba(0,32,80,.10);font-size:13px;overflow:visible;
+    transition:box-shadow .14s,border-color .14s;}
+  .nopipe:hover{border-color:#b9c3d1;box-shadow:0 0 22px -4px rgba(0,32,80,.16),0 0 8px -4px rgba(0,32,80,.12);}
+  .nopipe.is-sel{border-color:#10b981;box-shadow:0 0 0 2px rgba(16,185,129,.22),0 0 22px -4px rgba(16,185,129,.20);}
+  .nopipe.is-erro{border-color:#c0444c;box-shadow:0 0 0 2px rgba(192,68,76,.18);}
+  /* faixa de FALHA da última execução dentro do card */
+  .nopipe-falha{display:flex;align-items:flex-start;gap:7px;margin:0 12px;padding:7px 9px;border-radius:8px;
+    background:#fdeaea;border:1px solid #f3c9c9;color:#9a2530;font-size:11.5px;line-height:1.4;}
+  .nopipe-falha-ic{flex:none;font-size:13px;line-height:1.2;}
+  .nopipe-falha-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
+
+  /* Cabeçalho do nó: fundo NEUTRO com texto tinta. Antes era a cor do tipo com texto branco —
+     branco sobre âmbar/ciano/esmeralda dava ~2:1 e o nome do nó (o dado mais importante do card)
+     era o texto menos legível da tela. A cor do tipo passou para o chip do ícone, que é elemento
+     gráfico e exige só 3:1. */
+  .nopipe-head{display:flex;align-items:center;gap:9px;padding:8px 11px 8px 10px;border-radius:16px 16px 0 0;
+    background:var(--soft);border-bottom:1px solid var(--hair);border-top:3px solid var(--cor-tipo,var(--ink-3));
+    color:var(--ink);font-weight:600;letter-spacing:-.01em;font-family:"Space Grotesk",sans-serif;}
+  .nopipe-ic{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;flex:none;
+    border-radius:7px;background:var(--cor-tipo,var(--ink-3));color:#fff;}
+  .nopipe-ic svg{width:14px;height:14px;}
+  /* nome editável (clica e digita; salva no rascunho automaticamente) */
+  .nopipe-nome{flex:1;min-width:0;border:1px solid transparent;background:transparent;color:inherit;
+    font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13.5px;letter-spacing:-.01em;
+    padding:3px 6px;border-radius:6px;outline:none;}
+  .nopipe-nome:hover{background:rgba(0,32,80,.06);}
+  .nopipe-nome:focus{background:var(--surface);color:var(--ink);border-color:#0f766e;}
+  .nopipe-acoes{display:flex;align-items:center;gap:4px;flex:none;}
+  .nopipe-btn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:none;
+    border-radius:6px;background:transparent;color:var(--ink-2);cursor:pointer;font-size:13px;line-height:1;}
+  .nopipe-btn:hover{background:rgba(0,32,80,.08);color:var(--ink);}
+  .nopipe-btn:disabled{opacity:.5;cursor:default;}
+  .nopipe-x:hover{background:#c0444c !important;color:#fff;}
+  /* Cor por categoria: entra como `--cor-tipo` (chip do ícone + filete no topo do card), não como
+     fundo do texto. Mesmas cores da paleta lateral (.palitem-ic--*) — a identidade não mudou. */
+  .nopipe--fonte{--cor-tipo:#3b82f6;}
+  .nopipe--sql{--cor-tipo:#10b981;}
+  .nopipe--saida{--cor-tipo:#475569;}
+  .nopipe--juntar{--cor-tipo:#8b5cf6;}
+  .nopipe--filtrar{--cor-tipo:#f59e0b;}
+  .nopipe--agrupar{--cor-tipo:#06b6d4;}
+  .nopipe--comparacao{--cor-tipo:#ec4899;}
+  .nopipe--python{--cor-tipo:#6366f1;}
+  /* nós de efeito (008/009): escrita_sql (teal, grava dado) / http (laranja, chamada de rede) /
+     email (rosa-vinho, sai da plataforma para uma caixa de entrada) */
+  .nopipe--escrita_sql{--cor-tipo:#0d9488;}
+  .nopipe--http{--cor-tipo:#ea580c;}
+  .nopipe--email{--cor-tipo:#be123c;}
+  /* `ingestao`: marrom-terra, a cor da camada BRONZE do medalhão. Distinta dos demais
+     nós de efeito de propósito — este é o único que traz dado de FORA para dentro. */
+  .nopipe--ingestao{--cor-tipo:#a16207;}
+  /* Ícone escuro nos chips claros: branco sobre âmbar/ciano/esmeralda não alcança os 3:1 que um
+     elemento gráfico exige. */
+  .nopipe--filtrar .nopipe-ic,
+  .nopipe--agrupar .nopipe-ic,
+  .nopipe--sql .nopipe-ic{color:#0b1220;}
+
+  .nopipe-body{padding:10px 0 12px;display:flex;flex-direction:column;gap:8px;}
+  .nopipe-summary{padding:2px 14px;font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* Corpo SEMPRE aberto: editor de SQL/config + preview dentro do nó. */
+  .nopipe-body > .nodrag{padding:4px 14px 2px;display:flex;flex-direction:column;gap:9px;}
+  .no-form{display:flex;flex-direction:column;gap:7px;font-size:12px;}
+  .no-form label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink-2);font-weight:600;}
+  .no-form label.no-check{flex-direction:row;align-items:center;gap:6px;}
+  .no-form label.no-check input{width:auto;}
+  .no-form-lbl{font-size:11px;color:var(--ink-2);font-weight:600;}
+  .no-form select,.no-form input{border:1px solid var(--hair);border-radius:6px;padding:6px 8px;font-size:12.5px;
+    background:var(--surface);color:var(--ink);font-family:inherit;font-weight:400;width:100%;box-sizing:border-box;}
+  .no-form select:focus,.no-form input:focus{outline:none;border-color:var(--navy);}
+  .no-form small{color:var(--ink-3);}
+  .no-form .cm-editor{border:1px solid var(--hair);border-radius:6px;font-size:12px;}
+  .no-form .cm-editor.cm-focused{border-color:var(--navy);outline:none;}
+  /* Preview DENTRO do card */
+  .no-preview{display:flex;flex-direction:column;gap:7px;margin-top:2px;}
+  .no-preview-btn{align-self:flex-start;border:none;border-radius:7px;background:var(--navy-sup);color:#fff;
+    font-weight:600;font-size:12px;padding:6px 14px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;}
+  .no-preview-btn:hover{background:#06306e;}
+  .no-preview-btn:disabled{opacity:.6;cursor:default;}
+  .no-preview-erro{margin:0;color:#c0444c;font-size:11.5px;background:#fdeaea;border:1px solid #f3c9c9;border-radius:6px;padding:6px 9px;}
+  .no-preview-grade{max-height:200px;overflow:auto;border:1px solid var(--hair);border-radius:7px;}
+  .no-preview-grade table{border-collapse:collapse;font-size:11px;width:100%;}
+  .no-preview-grade th{position:sticky;top:0;background:var(--soft);text-align:left;padding:5px 8px;border-bottom:1px solid var(--hair);
+    color:var(--ink-3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+  .no-preview-grade td{padding:4px 8px;border-bottom:1px solid var(--hair-2);color:var(--ink-2);white-space:nowrap;}
+  .no-preview-rodape{padding:5px 8px;font-size:10.5px;color:var(--ink-3);background:var(--soft);border-top:1px solid var(--hair);}
+  /* Descrição livre do nó (o especialista explica o que acontece ali) */
+  .no-descricao{width:100%;box-sizing:border-box;border:1px solid var(--hair);border-radius:6px;padding:6px 8px;
+    font-family:inherit;font-size:12px;color:var(--ink-2);background:var(--soft);resize:vertical;outline:none;line-height:1.45;}
+  .no-descricao:focus{border-color:var(--navy);background:var(--surface);}
+  /* Blocos auxiliares no card: Parâmetros usados / Funções */
+  .no-bloco{display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--hair);padding-top:8px;}
+  .no-bloco-tit{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700;}
+  /* cabeçalho clicável do bloco recolhível (Parâmetros) */
+  .no-bloco-cab{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;border:none;
+    background:none;padding:0;cursor:pointer;font-family:inherit;}
+  .no-bloco-chev{display:inline-flex;color:var(--ink-3);transition:transform .14s;}
+  .no-bloco-chev.aberto{transform:rotate(180deg);}
+  .no-param{display:flex;align-items:center;gap:7px;font-size:12px;}
+  .no-param code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--navy);background:var(--soft-lime);
+    border-radius:4px;padding:1px 5px;flex:none;}
+  .no-param input{flex:1;min-width:0;border:1px solid var(--hair);border-radius:6px;padding:5px 8px;font-size:12px;
+    font-family:inherit;color:var(--ink);background:var(--surface);}
+  .no-param input:focus{outline:none;border-color:var(--navy);}
+  .no-param--alerta{color:#a5333b;font-size:11px;}
+  .no-param--alerta code{color:#a5333b;background:#fdeaea;}
+  .no-funcoes-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .no-funcao-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--hair);background:var(--surface);
+    border-radius:7px;padding:4px 9px;font-size:11.5px;color:var(--ink-2);cursor:pointer;font-family:inherit;font-weight:600;}
+  .no-funcao-chip .mk{width:9px;height:9px;border-radius:3px;border:1px solid var(--ink-3);flex:none;}
+  .no-funcao-chip.on{border-color:var(--navy);color:var(--navy);background:var(--soft-lime);}
+  .no-funcao-chip.on .mk{background:var(--lime);border-color:var(--lime);}
+  /* Portas (cordas MANUAIS): pontos na borda do card, sem rótulo. Maior especificidade (.sd-shell)
+     p/ vencer os defaults .react-flow__handle-left/-right. `top` vem inline (por índice). */
+  .sd-shell .react-flow__handle.nopipe-port{width:13px;height:13px;border-radius:50%;background:var(--navy);
+    border:2px solid var(--surface);box-shadow:var(--shadow-1);cursor:crosshair;}
+  /* color code da corda no ponto de encontro: ENTRADA roxo, SAÍDA vermelho. */
+  .sd-shell .react-flow__handle.nopipe-port--in{left:-1px;right:auto;transform:translate(-50%,-50%);background:#8b3bd8;}
+  .sd-shell .react-flow__handle.nopipe-port--out{right:-1px;left:auto;transform:translate(50%,-50%);background:#e23950;}
+  .sd-shell .react-flow__handle.nopipe-port:hover,
+  .sd-shell .react-flow__handle.nopipe-port.connecting,
+  .sd-shell .react-flow__handle.nopipe-port.valid{background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.4);}
+  /* React Flow põe padding no wrapper do nó default; com card custom zeramos p/ o card encostar na borda. */
+  .react-flow__node-fonte,.react-flow__node-sql,.react-flow__node-guiada,.react-flow__node-python,.react-flow__node-comparacao,.react-flow__node-saida{padding:0;}
+
+  /* Aresta bezier colorida (cor no CSS p/ herdar tema). Duplo-clique exclui (ou Delete c/ selecionada). */
+  .react-flow__edge{cursor:pointer;}
+  .react-flow__edge-path{stroke:#9fb0c8;stroke-width:2;}
+  .react-flow__edge.selected .react-flow__edge-path,
+  .react-flow__edge:hover .react-flow__edge-path{stroke:#e23950;stroke-width:2.5;}
+
+  /* linha dinâmica: coluna do canvas (flex) + inspetor/código ao lado (redimensionável) */
+  .sd-top{display:flex;gap:16px;align-items:stretch;flex-wrap:wrap;}
+  .sd-canvas-col{flex:1 1 540px;min-width:340px;display:flex;flex-direction:column;gap:6px;}
+  .sd-canvas{flex:1 1 auto;min-height:300px;height:380px;position:relative;resize:vertical;overflow:auto;
+    border:1px solid var(--hair);border-radius:var(--radius);box-shadow:var(--shadow-1);
+    background:radial-gradient(circle at 1px 1px,#dde4ec 1px,transparent 0) 0 0/22px 22px,#fff;}
+  .sd-canvas .react-flow{width:100%;height:100%;}
+  .sd-versao{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;padding-left:2px;}
+  .sd-insp{flex:0 1 360px;min-width:280px;max-width:62%;resize:horizontal;overflow:auto;display:flex;flex-direction:column;gap:14px;}
+  .sd-insp .card{flex:none;}
+  .sd-insp .add{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--hair);background:var(--soft);
+    border-radius:6px;padding:6px 11px;font-size:12.5px;color:var(--navy);font-weight:500;}
+  .sd-insp .add:hover{border-color:var(--lime);background:var(--soft-lime);}
+  .sd-preview{margin-top:16px;}
+  .sd-preview .card{resize:vertical;overflow:auto;min-height:170px;height:300px;}
+  .rzhint{font-size:10px;color:var(--ink-3);display:inline-flex;align-items:center;gap:5px;}
+
+  /* ---- página: canvas LIVRE (arrasta x/y + redimensiona) + bloco genérico ---- */
+  .pbuild{display:grid;grid-template-columns:214px 1fr 240px;gap:16px;align-items:start;}
+  .pcanvas{position:relative;height:486px;resize:vertical;overflow:auto;border:1px solid var(--hair);border-radius:var(--radius);box-shadow:var(--shadow-1);
+    background:radial-gradient(circle at 1px 1px,#e7ecf2 1px,transparent 0) 0 0/22px 22px,#fff;}
+  .pcanvas.over{border-color:var(--lime);box-shadow:0 0 0 3px #f1f6cf;}
+  .pcanvas.ver{background:var(--surface);}
+  .pblock{position:absolute;background:var(--surface);border:1px solid var(--hair);border-radius:8px;box-shadow:var(--shadow-1);overflow:hidden;display:flex;flex-direction:column;}
+  .pblock.sel{box-shadow:0 0 0 2px rgba(0,32,80,.16),var(--shadow-2);}
+  .pbh{display:flex;align-items:center;gap:7px;padding:6px 9px;border-bottom:1px solid var(--hair-2);background:var(--soft);cursor:move;flex:none;}
+  .pbh .vd{width:8px;height:8px;border-radius:2px;flex:none;}
+  .pbh .pbt{font-family:"Space Grotesk";font-weight:600;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
+  .pbh .x{border:none;background:none;color:var(--ink-3);font-size:13px;cursor:pointer;line-height:1;}
+  .pbh .x:hover{color:#b23b43;}
+  .pbbody{flex:1;overflow:auto;padding:8px 10px;}
+  .rsz{position:absolute;right:3px;bottom:3px;width:12px;height:12px;cursor:nwse-resize;border-right:2px solid #b9c3d1;border-bottom:2px solid #b9c3d1;}
+  .pblock.ver .pbh{cursor:default;background:var(--surface);border-bottom-color:var(--hair-2);}
+  .pblock.ver .x,.pblock.ver .tipo-seg,.pblock.ver .rsz{display:none;}
+  table.bmini{width:100%;border-collapse:collapse;font-size:11px;}
+  table.bmini th{text-align:right;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);padding:3px 7px;border-bottom:1px solid var(--hair-2);}
+  table.bmini th:first-child{text-align:left;}
+  table.bmini td{text-align:right;padding:3px 7px;border-bottom:1px solid var(--hair-2);color:var(--ink-2);}
+  table.bmini td:first-child{text-align:left;color:var(--ink);}
+  .kpi{height:100%;display:flex;flex-direction:column;justify-content:center;}
+  .kpi .kl{font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;}
+  .kpi .kn{font-family:"Space Grotesk";font-weight:700;font-size:30px;letter-spacing:-.02em;color:var(--navy);}
+  .tipo-seg{display:inline-flex;border:1px solid var(--hair);border-radius:5px;overflow:hidden;}
+  .tipo-seg button{border:none;background:var(--surface);padding:1px 7px;font-size:10px;color:var(--ink-2);border-right:1px solid var(--hair);width:auto;}
+  .tipo-seg button:last-child{border-right:none;} .tipo-seg button.on{background:var(--navy-sup);color:#fff;}
+  .modo-seg{display:inline-flex;border:1px solid var(--hair);border-radius:7px;overflow:hidden;}
+  .modo-seg button{border:none;background:var(--surface);padding:7px 13px;font-size:12.5px;color:var(--ink-2);border-right:1px solid var(--hair);font-weight:500;}
+  .modo-seg button:last-child{border-right:none;} .modo-seg button.on{background:var(--navy-sup);color:#fff;}
+  .galign{position:absolute;background:#e0218a;z-index:60;pointer-events:none;}
+  .galign.x{width:1px;top:0;bottom:0;}
+  .galign.y{height:1px;left:0;right:0;}
+  .pbt-in{flex:1;min-width:0;border:1px solid transparent;border-radius:4px;background:transparent;font-family:"Space Grotesk";font-weight:600;font-size:11.5px;color:var(--ink);padding:1px 4px;}
+  .pbt-in:hover{border-color:var(--hair);} .pbt-in:focus{border-color:var(--navy);background:var(--surface);outline:none;}
+
+/* ===== Login (split: painel da marca + formulário, fora do shell) ===== */
+.login-screen{min-height:100vh;display:flex;background:#eef1f6;}
+.login-brand-panel{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;padding:52px 54px;color:#fff;position:relative;overflow:hidden;background:linear-gradient(160deg,#33486a 0%,#26374f 58%,#1c2940 100%);}
+.login-brand-panel::before{content:"";position:absolute;right:-90px;top:-90px;width:320px;height:320px;border-radius:50%;background:rgba(199,209,140,.10);}
+.login-brand-panel::after{content:"";position:absolute;right:40px;bottom:-130px;width:280px;height:280px;border-radius:50%;background:rgba(255,255,255,.04);}
+.login-brand-top{display:flex;align-items:center;gap:13px;position:relative;}
+.login-brand-icon{width:46px;height:46px;border-radius:12px;overflow:hidden;display:inline-flex;box-shadow:0 6px 18px rgba(0,0,0,.3);}
+.login-brand-icon img{width:100%;height:100%;display:block;}
+.login-brand-name{font-size:21px;font-weight:600;letter-spacing:-.01em;color:#eef0e8;}
+.login-brand-name b{color:#c7d18c;font-weight:600;}
+.login-brand-mid{position:relative;}
+.login-eyebrow{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#c7d18c;margin-bottom:18px;}
+.login-headline{font-size:34px;line-height:1.16;font-weight:800;margin:0 0 18px;max-width:17ch;letter-spacing:-.01em;}
+.login-lead{font-size:15px;line-height:1.6;color:#aebcd2;max-width:44ch;margin:0;}
+/* #7e8db0 sobre o navy do painel dava 4,21:1 — abaixo de AA para texto normal. */
+.login-brand-foot{position:relative;font-size:12.5px;color:#9fb0cf;}
+.login-form-panel{width:486px;max-width:48vw;background:#fff;display:flex;flex-direction:column;justify-content:center;padding:52px 50px;}
+.login-form{display:flex;flex-direction:column;}
+.login-eyebrow--ink{color:#9aa4b2;letter-spacing:.04em;margin-bottom:0;}
+.login-title{font-size:27px;font-weight:800;color:var(--navy);margin:6px 0 4px;letter-spacing:-.01em;}
+.login-desc{font-size:14px;color:#6b7686;margin:0 0 24px;line-height:1.5;}
+/* #8a94a3 dava 3,07:1 — o rótulo dos dois únicos campos da tela reprovava AA. */
+.login-label{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#5a6675;margin-bottom:8px;}
+.login-input{width:100%;padding:12px 13px;border:1px solid #d8dfe8;border-radius:11px;background:#fff;font-size:14px;font-weight:600;color:var(--navy);font-family:inherit;outline:none;margin-bottom:16px;transition:border-color .15s;}
+.login-input:focus{border-color:var(--navy);}
+.login-erro{background:#fdeaea;border:1px solid #f3c9c9;color:#c0392b;border-radius:10px;padding:10px 13px;font-size:12.5px;font-weight:700;margin:2px 0 16px;}
+.login-btn{width:100%;padding:13px;border:none;border-radius:12px;background:var(--navy-sup);color:#fff;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(0,32,80,.25);transition:opacity .15s,background .15s;font-family:inherit;}
+.login-btn:hover{background:#06306e;}
+.login-btn:disabled{opacity:.7;cursor:default;}
+.login-foot-note{margin-top:18px;font-size:12px;color:#9aa4b2;text-align:center;}
+.login-aviso{background:#eaf4ec;border:1px solid #cfe6d4;color:#1e7a3a;border-radius:10px;padding:10px 13px;font-size:12.5px;font-weight:700;margin:2px 0 16px;}
+.login-link{color:var(--navy);font-weight:700;text-decoration:none;}
+.login-link:hover{text-decoration:underline;}
+@media (max-width:760px){.login-brand-panel{display:none;}.login-form-panel{width:100%;max-width:100%;}}
+
+/* Página de Conta (trocar a própria senha) */
+.conta-card{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);box-shadow:var(--shadow-1);padding:18px;max-width:460px;}
+.conta-id{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.conta-avatar{width:46px;height:46px;border-radius:12px;background:var(--navy-sup);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex:none;}
+.conta-nome{font-weight:700;font-size:15px;color:var(--ink);}
+.conta-meta{font-size:12.5px;color:var(--ink-3);}
+.conta-perfil{font-size:11px;color:#577f2a;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+.conta-h2{margin:0 0 12px;font-size:14px;font-weight:700;color:var(--ink);}
+.conta-fld{display:block;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 5px;}
+.conta-in{width:100%;border:1px solid var(--hair);border-radius:7px;padding:9px 11px;font-size:13.5px;font-family:inherit;color:var(--ink);box-sizing:border-box;}
+.conta-in:focus{outline:none;border-color:var(--navy);}
+.conta-ok{color:#15803d;font-size:12.5px;margin-top:10px;font-weight:600;}
+
+/* logo no topo-direita (topbar, fundo claro) */
+.topbar-brand{display:flex;align-items:center;gap:8px;margin-left:14px;}
+.topbar-brand .chip{width:28px;height:28px;border-radius:7px;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;background:transparent;box-shadow:none;}
+.topbar-brand .chip img{width:100%;height:100%;object-fit:contain;}
+.topbar-brand .word{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;color:var(--navy);letter-spacing:-.01em;}
+.topbar-brand .word b{color:#8aa00f;font-weight:700;}
+
+  /* ===================== HEADER (breadcrumbs + toggle de tema) ===================== */
+  .crumbs .sep{color:var(--ink-3);font-weight:400;}
+  .theme-toggle{
+    margin-left:auto;width:34px;height:34px;border:1px solid var(--hair);
+    background:var(--surface);border-radius:9px;color:var(--ink-2);
+    display:flex;align-items:center;justify-content:center;transition:.12s;
+  }
+  .theme-toggle:hover{color:var(--ink);border-color:var(--ink-3);}
+  /* Wordmark da sidebar: texto claro (a sidebar é escura nos dois temas). */
+  .brand .wordmark-text{color:#eef0e8;}
+
+  /* ===================== TEMA ESCURO ===================== */
+  /* As superfícies usam var(--surface)/--ink/--hair/--soft → trocar os tokens já reverte
+     fundos, texto e bordas. Componentes de tema próprio (React Flow, CodeMirror) e fundos
+     hardcoded têm overrides específicos abaixo. A sidebar permanece escura (chrome da marca). */
+  [data-theme="dark"]{
+    --bg:#0e131a;
+    --surface:#19212c;
+    --soft:#1f2935;
+    --soft-lime:#262d18;
+    --ink:#e8eef6;
+    --ink-2:#aab6c5;
+    --ink-3:#8b98aa; /* 5,54:1 sobre --surface (era 4,03:1) */
+    --hair:#2b3543;
+    --hair-2:#212b37;
+    /* DOIS PAPÉIS, DOIS TOKENS. Este valor servia de fundo de botão (com texto branco) E de
+       texto-acento sobre superfície escura — impossível de acertar com um número só: como fundo,
+       o branco em cima dava 3,47:1; como texto, ele dava 4,24:1. Agora `--navy` é o papel de
+       TEXTO (5,75:1 sobre a linha da grade) e `--navy-sup` é o papel de SUPERFÍCIE (branco em
+       cima: 6,60:1). No tema claro os dois valem o mesmo #002050, então nada muda lá. */
+    --navy:#7ba4de;
+    --navy-sup:#2f5d9e;
+    --navy-700:#4a78bd;
+    --lime-soft:#36421a;
+    --shadow-1:0 1px 2px rgba(0,0,0,.45);
+    --shadow-2:0 12px 34px rgba(0,0,0,.55);
+  }
+  [data-theme="dark"] body{background:var(--bg);color:var(--ink);}
+  [data-theme="dark"] ::selection{background:#36421a;color:#dfe8c0;}
+  /* Realces que dependiam de fundo branco puro. */
+  [data-theme="dark"] .glcard:hover,
+  [data-theme="dark"] .libcard:hover{border-color:var(--navy);}
+  /* Diff tints (verde/vermelho/creme) ficam mais escuros no dark. */
+  [data-theme="dark"] .node-bar{filter:none;}
+
+  /* React Flow (grafo do Studio) + mini-canvas de execuções — tema próprio. */
+  [data-theme="dark"] .react-flow{background:#0b1017;}
+  [data-theme="dark"] .react-flow__edge-path{stroke:#566379;}
+  [data-theme="dark"] .react-flow__edge.selected .react-flow__edge-path,
+  [data-theme="dark"] .react-flow__edge:hover .react-flow__edge-path{stroke:#7fa6e0;}
+  /* :not(.nopipe-port) — as portas do card custom têm cor própria (não viram dot azul-cinza). */
+  [data-theme="dark"] .react-flow__handle:not(.nopipe-port){background:#7e93b5;border-color:#0b1017;}
+  /* Nó custom no escuro: sombra mais densa, headers de cor clara escurecidos p/ contraste. */
+  [data-theme="dark"] .nopipe{border-color:var(--hair);box-shadow:0 0 16px -3px rgba(0,0,0,.55),0 0 6px -4px rgba(0,0,0,.5);}
+  [data-theme="dark"] .nopipe:hover{border-color:var(--navy);}
+  /* O cabeçalho é neutro nos dois temas; a cor do tipo mora no chip, que não precisa de override
+     (branco/tinta sobre a cor cheia funciona igual no escuro). */
+  [data-theme="dark"] .nopipe-head{background:#151d28;}
+  [data-theme="dark"] .nopipe-nome:hover,
+  [data-theme="dark"] .nopipe-nome--ro:hover{background:rgba(255,255,255,.08);}
+  [data-theme="dark"] .nopipe-btn:hover{background:rgba(255,255,255,.10);}
+  [data-theme="dark"] .sd-shell .react-flow__handle.nopipe-port{border-color:#19212c;}
+  [data-theme="dark"] .react-flow__controls{box-shadow:var(--shadow-1);}
+  [data-theme="dark"] .react-flow__controls button{
+    background:var(--surface);border-bottom:1px solid var(--hair);color:var(--ink);fill:var(--ink);
+  }
+  [data-theme="dark"] .react-flow__controls button:hover{background:var(--soft);}
+  [data-theme="dark"] .react-flow__attribution{background:transparent;}
+  [data-theme="dark"] .react-flow__attribution a{color:var(--ink-3);}
+  /* Execuções no escuro: canvas, nó da execução e os pills de status (que eram claros fixos). */
+  [data-theme="dark"] .exec-canvas{background:#0b1017;}
+  [data-theme="dark"] .exec-node{border-color:var(--hair);box-shadow:0 0 16px -3px rgba(0,0,0,.55);}
+  [data-theme="dark"] .exec-node:hover{border-color:var(--navy);}
+  /* No escuro o anel navy translúcido do selecionado desaparecia no fundo — usa o lime da marca. */
+  [data-theme="dark"] .exec-node.sel{border-color:var(--lime);box-shadow:0 0 0 3px rgba(192,208,0,.22);}
+  [data-theme="dark"] .exec-node-flag{background:#1d2735;}
+  [data-theme="dark"] .exec-node-flag.reap{color:#d8c98f;background:#2f2a1a;}
+  [data-theme="dark"] .statuspill.ok{color:#8fd0a8;background:#1a2c22;} [data-theme="dark"] .statuspill.ok .d{background:#4fa877;}
+  [data-theme="dark"] .statuspill.falha{color:#f0a3a8;background:#2f1c1f;} [data-theme="dark"] .statuspill.falha .d{background:#d4626a;}
+  [data-theme="dark"] .statuspill.skip{color:#d8c98f;background:#2f2a1a;} [data-theme="dark"] .statuspill.skip .d{background:#caa64a;}
+  [data-theme="dark"] .statuspill.exec{color:#a8c6ee;background:#182335;} [data-theme="dark"] .statuspill.exec .d{background:#5f8ed6;}
+  [data-theme="dark"] .exec-aviso{background:#2a2417;border-color:#4a3f22;color:#d8c98f;}
+  [data-theme="dark"] .exec-banner-falha{background:#2f1c1f;border-color:#5a2f33;color:#f0a3a8;}
+  [data-theme="dark"] .exec-erro-pre{background:#2a1718;border-color:#5a2f33;color:#f3b0b4;}
+  /* .sql tinha cor de texto fixa clara (#24364f) e nenhum override — ilegível no escuro. */
+  [data-theme="dark"] .sql{color:var(--ink);}
+  [data-theme="dark"] .noderow .res .err{color:#f0a3a8;}
+  [data-theme="dark"] .exec-cel-erro{color:#f0a3a8;}
+  [data-theme="dark"] .exec-tabela tbody tr.exec-dia td{background:#161d27;}
+  [data-theme="dark"] .exec-corrida-chip{background:#1c2a3d;border-color:#2c4160;}
+  [data-theme="dark"] .exec-corrida-chip:hover{background:#233550;border-color:#3a5680;}
+  [data-theme="dark"] .exec-corrida-chip[aria-expanded="true"]{background:var(--navy-sup);
+    border-color:var(--navy-sup);color:#fff;}
+  [data-theme="dark"] .exec-corrida-barra .seg.concluida{background:#4fa374;}
+  [data-theme="dark"] .exec-corrida-barra .seg.executando{background:#5f8ed6;}
+  [data-theme="dark"] .exec-corrida-barra .seg.falha{background:#d4626a;}
+  [data-theme="dark"] .exec-tabela tbody tr.exec-corrida-aberta td,
+  [data-theme="dark"] .exec-tabela tbody tr.exec-filha td{background:#1c2430;}
+  [data-theme="dark"] .exec-tabela tbody tr.exec-corrida-aberta:hover td,
+  [data-theme="dark"] .exec-tabela tbody tr.exec-filha:hover td{background:#222c3a;}
+  [data-theme="dark"] .exec-tabela tbody tr.exec-filha td:first-child{box-shadow:inset 3px 0 0 #34445a;}
+  [data-theme="dark"] .exec-tabela tbody tr.exec-filha.linha-exec td:first-child{box-shadow:inset 3px 0 0 #5f8ed6;}
+  [data-theme="dark"] .exec-tabela tbody tr.exec-filha.linha-falha td:first-child{box-shadow:inset 3px 0 0 #c0444c;}
+  /* Falhas no escuro: alerta só no NÚMERO, como no claro (a borda é a marca do selecionado). E o
+     #a8353d do claro dá 2,5:1 aqui — o número precisa do tom claro. */
+  [data-theme="dark"] .exec-chips .chip.alerta:not(.on){border-color:var(--hair);}
+  [data-theme="dark"] .exec-chips .chip.alerta{color:var(--ink-2);}
+  [data-theme="dark"] .exec-chips .chip.alerta .cnt{color:#f0a3a8;}
+  [data-theme="dark"] .exec-aovivo{color:#a8c6ee;background:#182335;}
+  [data-theme="dark"] .exec-trilha{background:#111823;}
+  [data-theme="dark"] .exec-noderow.sel{border-color:var(--lime);box-shadow:0 0 0 3px rgba(192,208,0,.22);}
+  [data-theme="dark"] .exec-canvas .react-flow__node.selectable:focus-visible{outline-color:var(--lime);}
+  /* table.obs th é navy sólido: no escuro o --navy clareia e o branco em cima reprova contraste. */
+  [data-theme="dark"] table.obs th{background:#1f3a63;color:var(--ink);}
+  /* A grade do nó mantém o cabeçalho discreto (--soft) TAMBÉM no escuro — mesma leitura nos dois
+     temas, senão a mesma tabela tem duas caras. */
+  [data-theme="dark"] table.obs.exec-obs th{background:var(--soft);color:var(--ink-2);}
+  [data-theme="dark"] .exec-erro-lista,
+  [data-theme="dark"] .exec-painel-erro-carga{color:#f0a3a8;}
+
+  /* CodeMirror recebe theme="dark" via prop (StudioGraph); o container acompanha. */
+  [data-theme="dark"] .cm-editor{background:#0b1017;border-radius:6px;}
+  [data-theme="dark"] .cm-editor .cm-gutters{background:#0b1017;border-color:var(--hair);}
+
+/* Seletor de período (Portal/Agendamentos): tipo + (mês | intervalo) + janela resolvida. */
+.periodo{display:flex;flex-wrap:wrap;gap:6px;align-items:center;width:100%;}
+.periodo select,.periodo input{width:auto;}
+.periodo-intervalo{display:inline-flex;gap:6px;align-items:center;}
+.periodo-ate{color:var(--ink-2);font-size:12px;}
+.periodo-hint{color:var(--ink-2);font-size:12px;font-family:ui-monospace,Menlo,monospace;flex-basis:100%;}
+
+/* Lista do modal de cache de relatório do dia (Portal). */
+.cache-lista{list-style:none;margin:0 0 16px;padding:0 2px 0 0;display:flex;flex-direction:column;gap:6px;
+  flex:1 1 auto;min-height:0;overflow-y:auto;}
+.cache-lista button{width:100%;display:flex;align-items:center;gap:10px;border:1px solid var(--hair);background:var(--surface);border-radius:8px;padding:9px 12px;cursor:pointer;font-family:inherit;font-size:13px;color:var(--ink);text-align:left;}
+.cache-lista button:hover{border-color:var(--navy);}
+.cache-lista button b{font-family:ui-monospace,Menlo,monospace;flex:0 0 auto;}
+.cache-lista .tag{font-size:11px;color:var(--ink-2);background:var(--hair-2);border-radius:4px;padding:1px 7px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
+.cache-lista .arr{margin-left:auto;color:var(--navy);font-weight:600;flex:0 0 auto;}
+
+/* ===== Surface Agendamentos ===== */
+.agd .page-head{margin-bottom:18px;}
+.agd .card{padding:20px 22px;margin-bottom:16px;}
+.agd .card h2{margin:0 0 16px;font-family:"Space Grotesk",sans-serif;font-size:15px;color:var(--ink);}
+.agd .aviso{border-radius:8px;padding:9px 13px;font-size:13px;margin:10px 0;}
+.agd .aviso.erro{background:#fdecee;color:#a5333b;border:1px solid #f0c4c9;}
+.agd .aviso.ok{background:#eef7ee;color:#2f7a36;border:1px solid #cfe6d0;}
+/* Campo: rótulo discreto acima + controle arredondado de largura total (padrão do sistema). */
+.agd-campo{display:flex;flex-direction:column;gap:6px;margin-bottom:15px;}
+.agd-campo:last-child{margin-bottom:0;}
+.agd-rot{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);}
+.agd-form input:not([type="radio"]):not([type="checkbox"]),.agd-form select,.agd-in{
+  border:1px solid var(--hair);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--surface);}
+.agd-in{width:100%;}
+.agd-form input:not([type="radio"]):not([type="checkbox"]):focus,.agd-form select:focus,.agd-in:focus{
+  outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(0,32,80,.08);}
+.agd-radio,.agd-freq,.agd-vig{display:flex;flex-wrap:wrap;gap:14px;align-items:center;}
+.agd-freq label,.agd-vig label,.agd-radio label{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--ink);}
+.agd-freq input,.agd-vig input,.agd-freq select{width:auto;}
+.agd-dias{display:inline-flex;gap:4px;flex-wrap:wrap;}
+.agd-dias label{border:1px solid var(--hair);border-radius:6px;padding:3px 7px;cursor:pointer;font-size:12px;gap:3px;}
+.agd-dias label.on{border-color:var(--navy);background:var(--navy-sup);color:#fff;}
+.agd-dias label input{display:none;}
+.agd-vig .hint{color:var(--ink-2);font-size:12px;}
+.agd-acoes{display:flex;justify-content:flex-end;gap:9px;margin-top:14px;}
+.agd-lista table{width:100%;border-collapse:collapse;font-size:13px;}
+.agd-lista th{text-align:left;color:var(--ink-3);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:6px 10px;border-bottom:1px solid var(--hair);}
+.agd-lista td{padding:8px 10px;border-bottom:1px solid var(--hair-2);color:var(--ink);}
+.agd-lista tr.off td{color:var(--ink-3);}
+.agd-lista .ro{color:var(--ink-3);}
+.agd-lista .badge.on{background:#eef7ee;color:#2f7a36;}
+.agd-lista .badge.off{background:var(--hair-2);color:var(--ink-3);}
+.agd-row-acoes{display:flex;gap:10px;justify-content:flex-end;}
+.agd .vazio{color:var(--ink-2);font-size:13px;}
+/* Sublinhado por padrão: só a cor navy não distingue o link do texto --ink no tema claro. */
+.lk{border:none;background:none;padding:0;color:var(--navy);font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;
+  text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;}
+.lk:hover{text-decoration-thickness:2px;}
+
+/* Multi-seleção de operação (Agendamentos): busca + lista de checkboxes; vazio = todas. */
+.agd-multi{display:flex;flex-direction:column;gap:8px;}
+.agd-multi-lista{display:flex;flex-direction:column;gap:2px;max-height:200px;overflow:auto;border:1px solid var(--hair);border-radius:8px;padding:6px;background:var(--surface);}
+.agd-multi-lista label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);padding:4px 6px;border-radius:6px;cursor:pointer;}
+.agd-multi-lista label:hover{background:var(--soft);}
+.agd-multi-lista label.on{background:var(--soft);font-weight:600;}
+.agd-multi-vazio{color:var(--ink-3);font-size:12px;padding:6px;}
+.agd-multi .hint{color:var(--ink-2);font-size:12px;display:flex;gap:10px;align-items:center;}
+
+/* Agendamentos — lista/detalhe no padrão entidade */
+table.agd-lista{width:100%;border-collapse:collapse;font-size:13px;}
+.agd .lc-bar{justify-content:space-between;}
+.agd-lista td.num,.agd-lista th.num{text-align:right;font-variant-numeric:tabular-nums;}
+.agd-lista .lk{font-size:13px;}
+.agd-falha{color:#a5333b;font-weight:700;}
+.agd-fixo{padding:9px 11px;border:1px solid var(--hair);border-radius:8px;background:var(--soft);color:var(--ink);font-size:13px;}
+.agd-form .card-h{margin:-20px -22px 16px;border-radius:var(--radius) var(--radius) 0 0;}
+
+/* Histórico do agendamento — drill dia → runs */
+.agd-dia{cursor:pointer;}
+.agd-dia:hover{background:var(--soft);}
+.agd-exp{color:var(--ink-3);font-size:10px;}
+.agd-dia-exp > td{background:var(--soft);padding:4px 10px 12px;}
+.agd-runs{width:100%;border-collapse:collapse;font-size:12px;}
+.agd-runs th{text-align:left;color:var(--ink-3);font-size:10px;text-transform:uppercase;letter-spacing:.05em;padding:5px 8px;border-bottom:1px solid var(--hair-2);}
+.agd-runs td{padding:5px 8px;border-bottom:1px solid var(--hair-2);color:var(--ink);}
+.agd-runs td.num,.agd-runs th.num{text-align:right;font-variant-numeric:tabular-nums;}
+
+/* ===== Contraste de texto de apoio (AA) =====
+   --ink-3 (#8492a6) dá 3,1:1 sobre a superfície clara: reprova para texto normal. Todo texto de
+   apoio que CARREGA informação vai para --ink-2 (7,2:1). Bloco no fim do arquivo de propósito: as
+   regras base destes seletores vêm depois das específicas, e com a mesma especificidade a última
+   vence — colocado antes, o ajuste era código morto. --ink-3 fica para separador/ícone decorativo. */
+.dgrid thead th,.pag-info,.lc-empty,.meta .k,.cfg-tabs button,
+.exec-lista-vazia,.exec-painel-vazio,.exec-painel-meta,.exec-atualizado,.exec-grade-pe,
+.exec-legenda,.exec-filtros .periodo-hint,.exec-node-tipo,
+.noderow .nt,.noderow .rdur,.exec-tabela tbody tr.exec-dia td,
+table.obs.exec-obs td.cel-vazia,.exec-cel-versao{color:var(--ink-2);}
+/* Ação do alerta de falha no escuro: o vermelho claro fixo dava 2,5:1 sobre o banner escuro. */
+[data-theme="dark"] .exec-banner-falha .pag-btn{color:#f0a3a8;border-color:#5a2f33;}
+[data-theme="dark"] .exec-banner-falha .pag-btn:hover:not(:disabled){background:#3a2226;border-color:#7a4046;}
+/* Depois de `.lk` (mesma especificidade, e a base vem no fim do arquivo): sem isto o contador de
+   falhas herdava o navy do link — que no escuro é quase o azul de "em execução". */
+.lk.exec-resumo-falha{color:#a8353d;}
+[data-theme="dark"] .lk.exec-resumo-falha{color:#f0a3a8;}
+
+/* ===== Passe transversal de acessibilidade (todas as telas) =====
+   Herdado da auditoria das telas de Execuções, onde estes dois pontos foram medidos:
+
+   1. FOCO VISÍVEL. Vários controles do produto zeram ou nunca definem `outline`, então navegar por
+      Tab era às cegas. Fallback único para tudo que recebe foco; quem já tem tratamento próprio
+      (`.exec-cel-link`, nó do grafo) continua vencendo por especificidade.
+   2. TEXTO DE APOIO QUE CARREGA INFORMAÇÃO. `--ink-3` (#8492a6) dá 3,05:1 sobre `--soft` e 3,16:1
+      sobre branco — reprova AA para texto normal. Rótulo de campo, cabeçalho de coluna, meta de
+      item de lista e afins passam para `--ink-2` (7,2:1). `--ink-3` fica para separador, ícone
+      decorativo e placeholder. Bloco no FIM do arquivo de propósito: as regras base destes
+      seletores vêm depois das específicas e, com a mesma especificidade, a última vence. */
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.lc-meta, .lc-empty, .dgrid .dg-nome .dg-sub, .card-h .tag, .fld, .kv .k, .meta .k,
+.dgrid .ro, .cfg-tabs button, .medhead, .dim-block h4, .shelf h4, .zone h5, .instr h4,
+.pg-col-h, .pg-empty, .pg-mini th, .libcard .ld, .no-form small, .no-preview-rodape,
+.nopipe-summary, .kpi .kl, .ver-row-data, .ver-row-exec, .conta-meta, .conta-fld,
+.agd-rot, .agd-lista th, .agd-runs th, .agd-exp, .agd-multi-vazio, .trace-foot,
+.node-type, .node-foot, .canvas-legend, .colchip .ty, .fpill .gr, .zone .empty {
+  color: var(--ink-2);
+}
+
+/* Formulário do operador no tema escuro: `.plabel` fixava fundo --lime com texto --navy, e o bloco
+   escuro redefine --navy (para #5b8bd0) mas não --lime — o rótulo do campo ficava em 2,0:1. */
+[data-theme="dark"] .plabel{background:var(--soft-lime);color:var(--ink);}
+[data-theme="dark"] .plabel .req{color:#f0a3a8;}
+[data-theme="dark"] .exec-erro{color:#f0a3a8;}
+/* Grade do relatório (a mesma tabela do preview): cabeçalho legível, alinhamento por TIPO e não
+   por posição, dígitos tabulares e cabeçalho fixo ao rolar — mesma régua da grade de Execuções. */
+table.bmini th{color:var(--ink-2);font-size:10.5px;}
+.pb-vazio{margin:0;padding:22px 14px;text-align:center;color:var(--ink-2);font-size:13px;}
+.bmini td .cel-nula{color:var(--ink-3);font-style:italic;}
+.bmini-sort{border:none;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;
+  text-transform:inherit;letter-spacing:inherit;}
+.bmini-sort:hover{color:var(--navy);}
+table.bmini th,table.bmini td{text-align:left;}
+table.bmini th.num,table.bmini td.num{text-align:right;font-variant-numeric:tabular-nums;}
+table.bmini td.cel-vazia{color:var(--ink-3);font-style:italic;}
+.pbbody table.bmini th{position:sticky;top:0;background:var(--soft);z-index:1;}
+/* Grade larga: largura do conteúdo, uma linha por célula e rolagem horizontal no card (`.pbbody`,
+   `overflow:auto`). `min-width:100%` mantém a grade curta ocupando o card inteiro. O cabeçalho continua
+   fixo no topo: o `overflow` do `.pbbody` é o contêiner de rolagem dos dois eixos. */
+table.bmini.bmini-larga{width:max-content;min-width:100%;}
+table.bmini.bmini-larga th,table.bmini.bmini-larga td{white-space:nowrap;}
+/* Painéis do relatório: com 2 blocos, o grid fixo de 3 colunas deixava uma coluna vazia. */
+.vis-grid{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));}
+/* O rail de relatórios rola em vez de cortar o último cartão sem aviso. */
+.report-rail{overflow-x:auto;}
+
+  /* Remover parâmetro: ação destrutiva com aparência de destrutiva (antes usava `.add`, o botão
+     verde de adicionar). Discreta em repouso, vermelha na intenção. */
+  .btn-remover-param{border:1px solid var(--hair);background:var(--surface);color:var(--ink-2);
+    border-radius:7px;padding:5px 10px;font-size:12px;font-family:inherit;cursor:pointer;}
+  .btn-remover-param:hover{border-color:#e0b4b8;background:#fdf2f3;color:#9a2530;}
+  [data-theme="dark"] .btn-remover-param:hover{border-color:#5d3036;background:#2b1a1d;color:#f0a3a8;}
+
+  /* Badges de versão no escuro: eram pastilhas de tema claro cravadas na UI escura. */
+  [data-theme="dark"] .ver-badge.st-publicada{color:#8fd0a8;background:#16281f;}
+  [data-theme="dark"] .ver-badge.st-rascunho{color:#e0c98a;background:#2b2415;}
+  [data-theme="dark"] .ver-badge.st-arquivada{color:var(--ink-3);background:#1b2330;}
+  [data-theme="dark"] .ver-badge.ativa{color:#0b1017;background:#4fbf95;}
+  [data-theme="dark"] .ver-badge.ultima{color:#a8c6ee;background:#182335;}
+  [data-theme="dark"] .ver-aviso{color:#e0c98a;background:#2b2415;border-color:#4a3d1c;}
+  [data-theme="dark"] .nopipe-falha{background:#2b1a1d;border-color:#5d3036;color:#f0a3a8;}
+
+  /* Prévia desatualizada: o resultado fica na tela (é informação), mas esmaecido e rotulado — antes
+     um resultado de dois minutos atrás passava por resultado do SQL que está escrito agora. */
+  .prev-desatual{margin:8px 10px 0;padding:7px 9px;border-radius:7px;font-size:11.5px;line-height:1.4;
+    color:#6b4e00;background:#fdf6e7;border:1px solid #f0ddb0;}
+  [data-theme="dark"] .prev-desatual{color:#e0c98a;background:#2b2415;border-color:#4a3d1c;}
+  .no-preview-grade.esmaecida{opacity:.55;}
+  /* Grade do preview: número alinhado à direita com dígitos de largura fixa; nulo distinguível. */
+  .no-preview-grade td.num,.no-preview-grade th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .no-preview-grade td.vazio{color:var(--ink-3);}
+
+  /* Ação primária de modal (Executar): navy da marca. Antes era `.btn-perigo` (vermelho de ação
+     destrutiva) com o navy forçado por estilo inline — e o inline vencia o tema escuro. */
+  .modal-acoes .btn-primario{border:none;background:var(--navy-sup);color:#fff;border-radius:8px;
+    padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .modal-acoes .btn-primario:hover{background:#001640;}
+  [data-theme="dark"] .modal-acoes .btn-primario{background:var(--lime);color:#0b1017;}
+  [data-theme="dark"] .modal-acoes .btn-primario:hover{background:#d3e400;}
+  /* "em branco = sem filtro" ao lado do rótulo do parâmetro opcional. */
+  .exec-param-opc{font-weight:400;font-size:11px;color:var(--ink-3);}
+  /* Campo obrigatório em branco depois de tentar executar. */
+  .exec-params [aria-invalid="true"]{border-color:#c0444c;box-shadow:0 0 0 2px rgba(192,68,76,.14);}
+
+  /* Nós de efeito (008) têm formulário longo (método, caminho, modo, concorrência, lote, timeout,
+     taxa, corpo, headers…). Em 300px cada campo virava uma linha e o card ficava com dois metros de
+     rolagem: card mais largo + campos curtos em duas colunas. */
+  .nopipe--http,.nopipe--escrita_sql,.nopipe--email{width:392px;}
+  .no-form-dupla{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  .no-form-dupla > label{min-width:0;}
+  /* Cada anexo do nó de e-mail é um bloco cercado: sem a moldura, os campos de três anexos viram
+     uma lista contínua e não se sabe onde um anexo acaba e o outro começa. */
+  .no-anexo{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid var(--hair);
+    border-radius:7px;background:var(--soft);}
+
+  /* Pular para o conteúdo: invisível até receber foco pelo Tab. */
+  .pular-nav{position:absolute;left:-9999px;top:8px;z-index:60;background:var(--navy-sup);color:#fff;
+    padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;}
+  .pular-nav:focus{left:8px;}
+  #conteudo:focus{outline:none;}
+
+/* ===== Administração (Usuários · Permissões), Minha conta e Login/Redefinir =====
+   Família `.adm-*` (telas de administração e conta), `.ct-*` (Minha conta) e `.lg-*` (Login e
+   Redefinir, que vivem fora do shell e têm paleta clara própria).
+
+   Existe porque as três telas de administração pintavam faixa de aviso/erro e campo de formulário
+   com cor CRAVADA no JSX (`background:"#fff"`, `#e9f6ee`, `#fdeced`): no tema escuro o campo ficava
+   branco dentro do card escuro e a faixa não pertencia mais à tela. Aqui tudo sai de token. */
+
+/* --- Botão secundário (era estilizado SÓ dentro de `.modal-acoes`; fora do modal saía com a
+   aparência default do navegador). `.modal-acoes .btn-sec` continua vencendo por especificidade. --- */
+.btn-sec{border:1px solid var(--hair);background:var(--surface);color:var(--ink-2);border-radius:6px;
+  padding:9px 15px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
+.btn-sec:hover:not(:disabled){border-color:var(--ink-3);color:var(--ink);}
+.btn-sec:disabled{opacity:.5;cursor:default;}
+
+/* --- Estado desabilitado VISÍVEL. `.btn-stamp` e os botões/selects da linha do `.dgrid` não
+   tinham regra `:disabled`: um controle desligado ficava com a MESMA aparência do ligado (a tela
+   de conta mostrava "Trocar senha" em navy cheio com o formulário vazio). Vale para o produto
+   inteiro, não só para estas telas. --- */
+.btn-stamp:disabled{opacity:.5;cursor:default;box-shadow:none;}
+.btn-stamp:disabled:hover{background:var(--navy-sup);}
+.dgrid .dg-acts button:disabled{opacity:.45;cursor:default;}
+.dgrid .dg-acts button:disabled:hover{border-color:var(--hair);color:var(--ink-2);}
+.dgrid select:disabled{opacity:.6;cursor:default;}
+/* Linha do próprio usuário logado: texto em vez de botão morto. */
+/* Nota da própria linha do usuário logado: é IMPEDIMENTO ("você não pode alterar o seu próprio
+   perfil"), não ausência de ação — em itálico ela lia como rodapé justamente onde as outras linhas
+   têm botão. O teto de largura é obrigatório: a célula herda `white-space:nowrap` do `td` e o texto
+   vazava da coluna de ações (medido: 214px de conteúdo numa célula de 172px). */
+.adm-nota-self{display:inline-block;max-width:172px;white-space:normal;
+  font-size:11.5px;color:var(--ink-2);font-style:normal;}
+.adm-nota-self svg{vertical-align:-1px;margin-right:3px;opacity:.85;}
+
+/* --- Barra de lista com filtros (Usuários) --- */
+.adm-barra{flex-wrap:wrap;gap:12px 14px;align-items:flex-end;}
+.adm-contagem{padding-bottom:8px;}
+.adm-filtro{display:flex;flex-direction:column;gap:4px;}
+.adm-filtro .nm{width:auto;min-width:150px;height:32px;padding:0 9px;font-size:12.5px;}
+.adm-barra-acao{margin-left:auto;}
+
+/* --- Faixa de retorno de ação (ok / erro / atenção). Composta com `.card`. --- */
+.adm-banner{display:flex;align-items:flex-start;gap:9px;padding:10px 13px;margin-bottom:14px;
+  font-size:12.5px;line-height:1.5;}
+.adm-banner-d{width:8px;height:8px;border-radius:50%;background:var(--ink-3);flex:none;margin-top:5px;}
+.adm-banner b{font-weight:700;}
+.adm-banner-x{margin-left:auto;flex:none;border:none;background:none;color:inherit;font-size:16px;
+  line-height:1;padding:0 3px;cursor:pointer;opacity:.65;}
+.adm-banner-x:hover{opacity:1;}
+.adm-banner-acao{margin-left:auto;flex:none;}
+.adm-banner-rid{opacity:.85;font-variant-numeric:tabular-nums;}
+.adm-banner--ok{background:#e9f6ee;border-color:#cbe6d4;color:#2f6b46;}
+.adm-banner--ok .adm-banner-d{background:#3c8a5e;}
+.adm-banner--erro{background:#fdeced;border-color:#f1bcc0;color:#a8353d;}
+.adm-banner--erro .adm-banner-d{background:#c0444c;}
+.adm-banner--aten{background:#fdf7e3;border-color:#ecdca6;color:#7a6a3c;}
+.adm-banner--aten .adm-banner-d{background:#caa64a;}
+[data-theme="dark"] .adm-banner--ok{background:#1a2c22;border-color:#2f5741;color:#8fd0a8;}
+[data-theme="dark"] .adm-banner--ok .adm-banner-d{background:#4fa877;}
+[data-theme="dark"] .adm-banner--erro{background:#2f1c1f;border-color:#5a2f33;color:#f0a3a8;}
+[data-theme="dark"] .adm-banner--erro .adm-banner-d{background:#d4626a;}
+[data-theme="dark"] .adm-banner--aten{background:#2a2417;border-color:#4a3f22;color:#d8c98f;}
+[data-theme="dark"] .adm-banner--aten .adm-banner-d{background:#caa64a;}
+
+/* --- Formulário em card (novo usuário) --- */
+.adm-form{margin-bottom:14px;}
+.adm-form-corpo{padding:14px 16px;}
+.adm-form-grid{display:grid;grid-template-columns:minmax(220px,1.2fr) minmax(200px,1fr) 190px;gap:12px;}
+@media (max-width:1080px){.adm-form-grid{grid-template-columns:1fr 1fr;}}
+.adm-campo{display:block;}
+.adm-form-dica{margin:10px 0 0;font-size:12px;color:var(--ink-2);}
+.adm-form-erro{margin:10px 0 0;font-size:12.5px;color:#a8353d;font-weight:600;}
+[data-theme="dark"] .adm-form-erro{color:#f0a3a8;}
+.adm-form-acoes{display:flex;align-items:center;gap:10px;margin-top:14px;}
+
+/* --- Legenda dos perfis (o que cada um pode) — `<details>` para não roubar a tela de quem já sabe. --- */
+.adm-perfis{margin-bottom:14px;}
+.adm-perfis > summary{padding:11px 16px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;}
+.adm-perfis[open] > summary{border-bottom:1px solid var(--hair-2);}
+.adm-perfis-lista{margin:0;padding:13px 16px 0;display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:11px 20px;}
+.adm-perfis-lista dt{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13px;color:var(--ink);}
+.adm-perfis-lista dd{margin:2px 0 0;font-size:12px;color:var(--ink-2);}
+.adm-perfis-pe{margin:0;padding:13px 16px 14px;font-size:12px;color:var(--ink-2);}
+
+/* Nunca acessou: informação, não vazio — distinguível de uma data sem virar alarme. */
+.adm-nunca{color:var(--ink-2);font-style:italic;white-space:nowrap;}
+/* Pill de status não quebra linha: em 1180px "ACESSO LIBERADO" virava duas linhas dentro da cápsula. */
+.dgrid .statuspill{white-space:nowrap;}
+/* Select dentro da linha da listagem: largura pelo conteúdo (o `input.nm` global é 100%). */
+.dgrid .adm-sel-perfil{width:auto;min-width:158px;padding:5px 8px;font-size:12.5px;}
+
+/* --- Cards de Permissões --- */
+.adm-card{margin-bottom:14px;}
+.adm-card-corpo{padding:14px 16px;display:flex;flex-direction:column;gap:14px;}
+.adm-card-corpo > .adm-banner{margin-bottom:0;}
+.adm-dica{margin:0;font-size:12.5px;color:var(--ink-2);}
+.adm-selrow-fim{align-items:flex-end;}
+.adm-selrow-fim .f input.nm{min-width:210px;}
+.adm-f-larga input.nm{min-width:280px;}
+.adm-erro-inline{display:block;margin-top:4px;font-size:11.5px;color:#a8353d;}
+[data-theme="dark"] .adm-erro-inline{color:#f0a3a8;}
+
+/* --- Escada de níveis (cumulatividade visível): o escolhido em destaque e os que ele JÁ INCLUI
+   marcados com o mesmo marcador, em moldura tracejada. Sem isso os quatro níveis pareciam
+   alternativas independentes e o admin concedia "ver" + "editar" na dúvida. --- */
+.adm-escada{border:none;margin:0;padding:0;min-width:0;}
+.adm-escada > legend{padding:0;margin-bottom:7px;}
+.adm-escada-chips{display:flex;flex-wrap:wrap;gap:8px;}
+.adm-nivel{cursor:pointer;gap:8px;padding:8px 12px;}
+.adm-nivel-rot{font-weight:600;}
+.adm-nivel-oque{color:var(--ink-2);font-size:11.5px;}
+.adm-nivel-selo{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  color:#3c5400;background:var(--soft-lime);border-radius:4px;padding:1px 6px;}
+[data-theme="dark"] .adm-nivel-selo{color:#dfe8c0;}
+.adm-nivel--inc{border-style:dashed;}
+.adm-nivel--inc .mk{background:var(--lime);border-color:var(--lime);}
+.adm-escada-nota{margin:0;font-size:12px;color:var(--ink-2);}
+
+/* --- Resumo da ação (frase do que vai acontecer) + ações --- */
+.adm-resumo{font-size:13px;color:var(--ink);background:var(--soft);border:1px solid var(--hair);
+  border-radius:var(--radius);padding:9px 13px;}
+.adm-resumo-falta{color:var(--ink-2);}
+.adm-acoes{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+
+/* --- Registro do que foi feito nesta sessão (a API não lista permissões concedidas) --- */
+.adm-nota-listagem{margin-bottom:0;}
+.adm-sessao{border-top:1px solid var(--hair-2);padding-top:12px;}
+.adm-sessao h4{margin:0 0 8px;}
+.adm-sessao-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
+.adm-sessao-lista li{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-2);}
+.adm-sessao-hora{color:var(--ink-2);flex:none;}
+.adm-sessao-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* --- Lista de grupos --- */
+.adm-grupos{overflow:hidden;}
+.adm-grupo-row{flex-wrap:wrap;align-items:flex-start;}
+.adm-grupo-main{cursor:default;}
+.adm-membros{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.adm-grupo-acts{align-items:center;flex-wrap:wrap;gap:7px;}
+.adm-sel-membro{width:auto;min-width:180px;padding:5px 8px;font-size:12.5px;}
+
+/* --- Minha conta --- */
+/* BUG do tema escuro: `.conta-in` nunca declarou `background`, então o campo ficava com o branco
+   default do navegador enquanto o texto vinha de `--ink` (quase branco) — senha invisível enquanto
+   digitada. Os três campos de senha da tela dependiam disso. */
+.conta-in{background:var(--surface);}
+.conta-in::placeholder{color:var(--ink-3);}
+.ct-wrap{max-width:560px;margin:0 auto;}
+.ct-wrap .conta-card{max-width:none;margin-bottom:14px;}
+.ct-erro-id{color:#a8353d;font-size:12.5px;}
+[data-theme="dark"] .ct-erro-id{color:#f0a3a8;}
+/* Requisitos da senha conferidos ao vivo: a política (mín. 12) precisa ser verificável ANTES do
+   envio — antes ela vivia só no placeholder de um dos campos. */
+.ct-req{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;
+  font-size:12px;color:var(--ink-2);}
+.ct-req li span{display:inline-block;width:12px;color:var(--ink-3);}
+.ct-req li.ok{color:#2f6b46;}
+.ct-req li.ok span{color:#3c8a5e;}
+[data-theme="dark"] .ct-req li.ok{color:#8fd0a8;}
+[data-theme="dark"] .ct-req li.ok span{color:#4fa877;}
+.ct-acoes{display:flex;align-items:center;gap:14px;margin-top:14px;}
+.ct-mfa-txt{margin:0 0 12px;font-size:12.5px;color:var(--ink-2);line-height:1.55;}
+.ct-mfa-passos{margin-top:12px;}
+.ct-mfa-passos ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px;
+  font-size:12.5px;color:var(--ink-2);}
+/* Chave do autenticador: mostrada UMA vez, selecionável de uma vez (user-select:all) para quem
+   copia à mão. Não é segredo reexibido — é o valor recém-gerado, e sai da tela ao confirmar. */
+.ct-mfa-segredo{display:flex;align-items:center;gap:9px;margin-top:7px;}
+.ct-mfa-segredo code{flex:1;min-width:0;font-family:ui-monospace,Menlo,monospace;font-size:13px;
+  letter-spacing:.08em;color:var(--ink);background:var(--soft);border:1px solid var(--hair);
+  border-radius:6px;padding:8px 10px;overflow-wrap:anywhere;user-select:all;}
+.ct-mfa-codigo{margin-top:7px;max-width:200px;}
+.ct-mfa-codigo .conta-in{letter-spacing:.3em;text-align:center;}
+.ct-mfa-aviso{margin:12px 0 0;font-size:12px;color:var(--ink-2);}
+
+/* --- Login / Redefinir (painel claro próprio; não usa tokens de tema) --- */
+.login-form form{display:flex;flex-direction:column;}
+.lg-label-linha{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+.lg-btn-txt{border:none;background:none;padding:0;margin-bottom:8px;font-family:inherit;
+  font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#5b6b80;cursor:pointer;}
+.lg-btn-txt:hover{color:var(--navy);}
+.lg-btn-link{border:none;background:none;padding:0;font-family:inherit;font-size:12px;cursor:pointer;}
+.lg-btn-link:disabled{opacity:.6;cursor:default;}
+.lg-btn-a{display:block;text-align:center;text-decoration:none;}
+.lg-dica{margin:-10px 0 16px;font-size:11.5px;color:#6b7686;}
+.lg-req{list-style:none;margin:0 0 16px;padding:0;display:flex;flex-direction:column;gap:4px;
+  font-size:11.5px;color:#6b7686;}
+.lg-req li span{display:inline-block;width:12px;}
+.lg-req li.ok{color:#1e7a3a;font-weight:600;}
+
+/* Estado do 2º fator na tela de conta: pill (ligado/desligado) + as duas ações lado a lado. */
+.ct-mfa-estado{margin:0 0 12px;}
+.ct-mfa-acoes{display:flex;flex-wrap:wrap;gap:9px;}
+
+  /* ===== Portal — campo do operador, carimbo e contagem por bloco =====
+     O formulário do operador passou a empilhar CAMPO + DICA dentro da célula `.pval` (a dica diz o
+     contrato do vazio: "em branco = sem filtro" no opcional, "define o escopo" no obrigatório). */
+  .pval .exec-param{flex:1;min-width:0;}
+  /* Obrigatório em branco depois de tentar gerar. A regra `.exec-params [aria-invalid]` já existia,
+     mas escopada ao modal de execução — o formulário do Portal não vive dentro de `.exec-params`. */
+  .pval input[aria-invalid="true"],.pval select[aria-invalid="true"]{
+    border-color:#c0444c;box-shadow:0 0 0 2px rgba(192,68,76,.14);}
+  [data-theme="dark"] .pval input[aria-invalid="true"],
+  [data-theme="dark"] .pval select[aria-invalid="true"]{border-color:#d4626a;}
+  /* A dica do campo CARREGA informação (o contrato do vazio), não é decoração: --ink-3 em 11px
+     reprova AA. */
+  .pval .exec-param-opc{color:var(--ink-2);line-height:1.35;}
+  /* "18 linhas" / "exibindo 200 de 5.000 linhas" também carregam informação (Portal e Relatórios);
+     10px em --ink-3 reprova. E a contagem não deve encolher no cabeçalho do bloco. */
+  .rzhint{color:var(--ink-2);font-size:11px;}
+  .pbh .rzhint{flex:none;white-space:nowrap;}
+  /* O carimbo ("Dado congelado em …") é a linha mais importante da visualização. */
+  .note-line b{color:var(--ink);}
+
+/* ===== Construtor de cubo e de view (Modelo) =====
+   Bloco nascido da auditoria de UX das duas telas. Só COMPLEMENTA o que já existia
+   (.cstep/.colchip/.medrow/.zone/.fpill/.zchip): nenhuma regra base foi alterada. */
+
+/* ---- Cubo ---- */
+/* Marcar a coluna como dimensão tem de ser um <button> (era <span onClick>: inalcançável por
+   teclado e sem estado anunciado), mas dentro do chip não pode PARECER um botão. */
+.cubo-mk{display:inline-flex;align-items:center;gap:8px;border:none;background:none;padding:0;margin:0;
+  font:inherit;color:inherit;text-align:left;cursor:pointer;}
+/* Coluna que a definição usa e o snapshot lido NÃO tem: a consulta do cubo falha assim. */
+.colchip.cubo-fora{border-style:dashed;border-color:#caa64a;}
+.colchip.cubo-fora .ty{color:#7a6a3c;background:#f6f1e1;border-color:#ecdca6;}
+[data-theme="dark"] .colchip.cubo-fora .ty{color:#d8c98f;background:#2f2a1a;border-color:#4a3f22;}
+/* Estado da leitura das colunas do snapshot: texto + ações (Tentar de novo / Calcular pelo rascunho). */
+.cubo-fonte-estado{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;
+  font-size:12.5px;color:var(--ink-2);}
+.cubo-busca,.vw-busca{max-width:230px;margin-bottom:10px;}
+.cubo-previa-estado,.vw-previa-estado{padding:12px 16px;font-size:12.5px;}
+.cubo-pend-lista{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:3px;}
+
+/* ---- View ---- */
+/* Prateleira um pouco mais larga: com o selo "em uso" no pill, 212px cortava o nome da medida
+   ("Qtd Cede…") — e o nome do campo é a informação do controle. */
+.build-grid{grid-template-columns:244px 1fr;}
+/* .fpill virou <button>: clicar leva o campo para a caixa natural (arrastar exige mouse). */
+button.fpill{width:100%;text-align:left;font-family:inherit;font-size:12.5px;}
+.vw-pill-nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vw-usado{opacity:.72;}
+.vw-usado-tag{flex:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+  color:#2c527f;background:#e8f0fb;border-radius:4px;padding:1px 5px;}
+[data-theme="dark"] .vw-usado-tag{color:#a8c6ee;background:#182335;}
+/* "+ adicionar" de cada caixa: caminho de TECLADO da montagem (e o mais rápido com 20+ campos). */
+/* No cabeçalho da caixa (ver o porquê no JSX): compacto e à direita, fora da área de soltar. */
+.vw-add{margin:0 0 0 auto;width:auto;max-width:130px;border:1px solid var(--hair);border-radius:6px;
+  padding:3px 6px;font-size:11px;font-family:inherit;color:var(--ink-2);background:var(--surface);}
+.zone h5{display:flex;align-items:center;gap:8px;}
+.vw-add:disabled{opacity:.55;}
+/* Campo que a view usa e o cubo publicado não tem mais. */
+.zchip.vw-fora{border-color:#caa64a;border-style:dashed;}
+.vw-fora-tag{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+  color:#7a6a3c;background:#f6f1e1;border-radius:4px;padding:1px 5px;}
+[data-theme="dark"] .vw-fora-tag{color:#d8c98f;background:#2f2a1a;}
+.vw-h4-leve{font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-2);}
+.vw-liberados{display:flex;flex-wrap:wrap;gap:6px;}
+.vw-check{display:flex;align-items:center;gap:9px;font-size:13px;padding:3px 0;}
+.vw-check .cdot{width:10px;height:10px;border-radius:50%;flex:none;}
+.vw-check-fim{margin-top:8px;font-size:12.5px;font-weight:600;}
+.vw-check-fim.ok{color:#2f6b46;}
+.vw-check-fim.falha{color:#a8353d;}
+[data-theme="dark"] .vw-check-fim.ok{color:#8fd0a8;}
+[data-theme="dark"] .vw-check-fim.falha{color:#f0a3a8;}
+
+/* ---- comuns às duas telas ---- */
+/* Texto de apoio que CARREGA informação: --ink-3 reprova AA em texto normal; --ink-2 dá 7,2:1. */
+.cubo-nota,.vw-nota{font-size:12px;color:var(--ink-2);}
+.cubo-erro-inline,.vw-erro-inline{color:#a8353d;font-size:12.5px;}
+[data-theme="dark"] .cubo-erro-inline,[data-theme="dark"] .vw-erro-inline{color:#f0a3a8;}
+/* Estado vazio DENTRO de um passo/caixa (a tela não está vazia — a caixa está). */
+.cubo-vazio,.vw-vazio{margin:0;padding:10px 2px;font-size:12.5px;color:var(--ink-2);}
+/* NULL ("—") e string vazia ("(vazio)") distinguíveis do dado real na prévia. */
+table.pivot td.cel-vazia{color:var(--ink-3);font-style:italic;}
+/* O selo "COMO FUNCIONA" era um adesivo de tema claro cravado na UI escura. */
+[data-theme="dark"] .note-line .badge{color:#d6e08a;background:#2b3318;border-color:#4a5a1e;}
+
+/* ===== Passe de cadastro (Conexões/Agendamentos/Funções) ===== */
+
+/* 1. Data grid em notebook: a tabela de Execuções já reduz o respiro em ≤1340px; o componente
+      ÚNICO de listagem (.dgrid) não fazia, e em 1180px a coluna de ações — a que tem Excluir —
+      era a primeira a sair de vista (com overflow:hidden, era recortada em vez de alcançável). */
+@media (max-width:1340px){
+  .dgrid thead th,.dgrid tbody td{padding-left:10px;padding-right:10px;}
+}
+
+/* 2. Pill de estado DESLIGADO. Agendamento inativo reusava `.statuspill.skip` (âmbar), a mesma cor
+      de "escrita habilitada" — dois significados no mesmo tom. `off` é neutro: "não vai rodar" não
+      é "atenção". */
+.statuspill.off{color:var(--ink-2);background:var(--hair-2);}
+.statuspill.off .d{background:var(--ink-3);}
+[data-theme="dark"] .statuspill.off{color:var(--ink-2);background:#232d3a;}
+[data-theme="dark"] .statuspill.off .d{background:var(--ink-3);}
+
+/* 3. Avisos de Agendamentos no tema escuro: `.agd .aviso.erro/.ok` fixavam fundo claro, e um banner
+      branco no meio da tela escura é o único elemento que não acompanha o tema. */
+[data-theme="dark"] .agd .aviso.erro{background:#2f1c1f;border-color:#5a2f33;color:#f0a3a8;}
+[data-theme="dark"] .agd .aviso.ok{background:#16281c;border-color:#2c4a33;color:#8fd0a8;}
+
+/* 4. Barra de filtros das telas de cadastro. */
+.filtros-cad{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+.filtros-cad label{display:flex;flex-direction:column;gap:5px;}
+.filtros-cad .chip,.filtros-cad .pag-btn{height:37px;box-sizing:border-box;}
+.filtros-cad .nm{width:auto;}
+
+/* Invólucro rolável do data grid: `.dgrid` tem overflow:hidden (por causa do raio), então em
+   notebook a coluna de ações era RECORTADA em vez de alcançável por rolagem. */
+.dgrid-wrap{overflow-x:auto;border-radius:var(--radius);}
+.dgrid-wrap:focus-visible{outline:2px solid var(--navy);outline-offset:2px;}
+
+/* ===== Carimbo/publicado no TEMA ESCURO (Relatórios + Página) =====
+   As marcas de "carimbo" foram escritas com cor clara FIXA e nunca ganharam override: no escuro o
+   selo "imutável" (#5f6b00 sobre superfície escura) fica em ~2:1, e os chips lime-claros viram
+   lampejos brancos no meio da página. */
+[data-theme="dark"] .trace-card .immut,
+[data-theme="dark"] .ro-banner .immut{color:#c8d67a;}
+[data-theme="dark"] .trace-chain .step.term{background:#2a3218;border-color:#4a5a1e;color:#dbe8a8;}
+[data-theme="dark"] .ro-banner .ro{background:var(--soft);border-color:var(--hair);color:var(--ink-2);}
+/* .run-banner é o ÚNICO aviso de sucesso do produto (Studio e Página) e também é claro fixo. */
+[data-theme="dark"] .run-banner{background:#242c14;border-color:#48551f;color:#dbe8a8;}
+[data-theme="dark"] .run-banner .dot{background:#c0d000;}
+/* Anel de "solte aqui" do quadro da Página: #f1f6cf fixo estoura no fundo escuro. */
+[data-theme="dark"] .pcanvas.over{box-shadow:0 0 0 3px #36421a;}
+
+/* ===== .sw usado como <button> (interruptor acessível) =====
+   .sw foi escrito para <span>; virou <button role="switch"> para ser alcançável por teclado, e o
+   <button> traz borda/padding próprios. */
+button.sw{border:none;padding:0;}
+
+/* ===== .sbox fora de .pg-settings =====
+   .sbox só tinha estilo dentro de .pg-settings: nas abas Filtros/Execução da Página e em dois
+   painéis do Pipeline o "cartão" aparecia SEM moldura. */
+.sbox{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);
+  box-shadow:var(--shadow-1);padding:14px;}
+
+/* ============================================================================
+   Passe final da auditoria independente (3 lentes sobre as capturas reais)
+   ============================================================================ */
+
+/* T1 — O tema escuro tinha DOIS primários, e o principal reprovava AA.
+   `--navy` servia ao mesmo tempo de fundo de botão e de cor de acento: no escuro
+   (#5b8bd0) o botão primário do produto inteiro — "+ Novo…", "Atualizar", "Executar",
+   "Publicar" — ficava em 3,47:1 com texto branco. E dentro de modal o mesmo papel já
+   tinha virado lime. Agora o FUNDO DE AÇÃO tem token próprio; `--navy` segue sendo o
+   acento (texto, link, borda). */
+:root{ --acao:var(--navy); --acao-2:var(--navy-700); --acao-ink:#fff; --acao-ic:var(--lime); }
+[data-theme="dark"]{ --acao:#2f6fd0; --acao-2:#3569c9; --acao-ink:#fff; --acao-ic:#c0d000; }  /* --acao-2 era #3f7ede: branco em cima dava 4,00:1 (mínimo 4,5); #3569c9 dá 5,23:1 */
+.btn-stamp,.btn-run,.no-preview-btn,.code-janela-salvar,.modal-acoes .btn-primario,.pular-nav{
+  background:var(--acao);color:var(--acao-ink);
+}
+.btn-stamp:hover,.btn-run:hover,.no-preview-btn:hover,
+.code-janela-salvar:hover,.modal-acoes .btn-primario:hover{background:var(--acao-2);}
+.btn-stamp .ic,.btn-run .ic{color:var(--acao-ic);}
+[data-theme="dark"] .modal-acoes .btn-primario{background:var(--acao);color:var(--acao-ink);}
+[data-theme="dark"] .modal-acoes .btn-primario:hover{background:var(--acao-2);}
+
+/* T2 — Controles NATIVOS não seguiam tema nenhum: no escuro o popup do <select>, o
+   calendário do input[type=date] e a barra de rolagem abriam em chrome claro, e
+   radio/checkbox usavam o azul do sistema operacional — uma cor fora da paleta. */
+:root{ color-scheme:light; accent-color:var(--navy); }
+[data-theme="dark"]{ color-scheme:dark; accent-color:var(--lime); }
+
+/* T2 — Ilhas de tema claro que o passe escuro não alcançou (são as superfícies que o
+   conjunto de capturas escuras nunca abriu). */
+[data-theme="dark"] .no-preview-erro,
+[data-theme="dark"] .no-param--alerta code{background:#2b1a1d;border-color:#5d3036;color:#f0a3a8;}
+[data-theme="dark"] .code-janela-x:hover{background:#2b1a1d;color:#f0a3a8;}
+[data-theme="dark"] .pill.ok{color:#dbe8a8;background:#2a3218;border-color:#4a5a1e;}
+[data-theme="dark"] .reap,
+[data-theme="dark"] .exec-legenda-item.reap::after{color:#d8c98f;background:#2f2a1a;}
+[data-theme="dark"] .agd-lista .badge.on{background:#16281c;color:#8fd0a8;}
+/* O quadro da Página é uma laje BRANCA no escuro (o canvas do Studio é coberto pelo
+   React Flow; este não). */
+[data-theme="dark"] .pcanvas,[data-theme="dark"] .sd-canvas{
+  background:radial-gradient(circle at 1px 1px,#243040 1px,transparent 0) 0 0/22px 22px,#0b1017;
+}
+
+/* T3 — Superfícies com a forma errada para a função.
+   Valor vindo do sistema não usa moldura de campo editável, e frase de estado não tem
+   geometria de input vazio ("Escolha o usuário." parecia um campo por preencher). */
+.agd-fixo{border:none;border-left:3px solid var(--hair);border-radius:0;background:transparent;
+  padding:9px 0 9px 11px;color:var(--ink);font-weight:600;}
+.adm-resumo{background:transparent;border:none;border-left:3px solid var(--hair);
+  border-radius:0;padding:2px 0 2px 11px;}
+/* Desabilitado precisa DESSATURAR: `opacity:.5` num botão cheio produz um meio-tom que
+   continua parecendo clicável. */
+.btn-stamp:disabled,.btn-run:disabled,.modal-acoes .btn-primario:disabled{
+  opacity:1;background:var(--hair-2);color:var(--desab-ink);border:1px solid var(--hair);box-shadow:none;}
+.btn-stamp:disabled .ic,.btn-run:disabled .ic{color:var(--desab-ink);}
+/* O rótulo do desabilitado usava `--ink-3`, que sobre o fundo dessaturado do próprio botão dá
+   4,20:1 — controle desabilitado é isento de WCAG, mas aqui ele carrega a informação do que a tela
+   espera de você ("Trocar senha", "Conceder"): quem lê precisa saber QUAL botão está apagado.
+   #5b6979 leva a 4,95:1 sem ficar parecendo ligado (o fundo continua sendo o do desabilitado). */
+
+/* Contraste — a varredura anterior parou no meio. Estes carregam informação e estavam em
+   3,16:1 (mínimo 4,5). O primeiro par é o mais grave e é honestidade, não estética: são os
+   marcadores de NULL ("—") e de string vazia ("(vazio)") — a distinção que a regra do
+   produto manda preservar — pintados quase invisíveis numa grade de conferência de dado. */
+.bmini td .cel-nula,table.bmini td.cel-vazia,table.pivot td.cel-vazia,
+.no-preview-grade td.vazio,.exec-obs td.vazio,
+.eyebrow,.crumbs,.lc-bar,.ct-req li span,.prev-estado,.no-func-vazio,
+.selrow .f label,.sd-palette-grupo{color:var(--ink-2);}
+/* Vence o `.fld` global por especificidade — por isso precisa vir aqui. */
+.pg-settings label.fld{color:var(--ink-2);}
+/* Sidebar: rótulo de grupo e atalho sobre o navy escuro davam 3,22:1. ESCOPADO à sidebar: a
+   classe é compartilhada e o Portal a reusa em cabeçalho de seção sobre fundo CLARO, onde este
+   azul claro dá 2,08:1 — a correção de um lugar tinha piorado o outro. */
+.sidebar .nav-group-label,.sidebar .nav-item .kbd{color:#93aeda;}
+/* No escuro, `--ink-3` sobre `--soft`/`--surface` ficava em 4,03–4,44:1. */
+
+/* Portal — o rótulo do campo do operador era uma laje de lime saturado: o único bloco
+   saturado grande do produto, e ele não sinaliza sucesso nem seleção. Vira superfície
+   neutra com o obrigatório em vermelho. */
+.plabel{background:var(--soft);color:var(--ink);border-right:1px solid var(--hair);
+  align-items:flex-start;padding:14px 14px 11px;}
+.plabel .req{color:#c0444c;}
+[data-theme="dark"] .plabel{background:var(--soft);color:var(--ink);}
+[data-theme="dark"] .plabel .req{color:#f0a3a8;}
+.report-rail{padding-right:38px;scroll-padding-inline:38px;}
+
+/* Editor: o selo da versão colidia com a atribuição do React Flow, e a paleta cortava no
+   meio sem nenhum indício de que rolava. */
+.sd-shell .react-flow__attribution{right:auto;left:6px;bottom:0;}
+.sd-palette-itens{mask-image:linear-gradient(#000 calc(100% - 18px),transparent);
+  -webkit-mask-image:linear-gradient(#000 calc(100% - 18px),transparent);}
+
+/* Ação principal do operador precisa parecer ação em REPOUSO (só sublinhava no hover). */
+.dgrid .dg-link{color:var(--navy);text-decoration:underline;text-decoration-color:var(--hair);
+  text-decoration-thickness:1px;text-underline-offset:3px;}
+.dgrid .dg-link:hover{text-decoration-color:currentColor;text-decoration-thickness:2px;}
+
+/* Grade de filtros das execuções: deixava ~140px de buraco em 1440 e empurrava o período
+   para a segunda linha em 1180. */
+.exec-filtros{grid-template-columns:200px minmax(460px,1fr) auto auto;}
+@media (max-width:1340px){.exec-filtros{grid-template-columns:200px 1fr;row-gap:12px;}}
+
+/* Conta — regra da política não atendida (antes o estado vivia só no glifo/texto). */
+.ct-req li.falta{color:#a8353d;}
+.ct-req li.falta span{color:#c0444c;}
+[data-theme="dark"] .ct-req li.falta{color:#f0a3a8;}
+[data-theme="dark"] .ct-req li.falta span{color:#d4626a;}
+
+/* Conta — largura do produto: era uma coluna centrada de 560px, destoando de todas as telas. */
+.ct-wrap{max-width:1080px;margin:0;display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;align-items:start;}
+.ct-wrap .conta-card{max-width:none;margin-bottom:0;}
+.ct-wrap .conta-id,.ct-wrap .ct-erro-id{grid-column:1/-1;}
+
+/* Usuários — escolha de perfil dentro do modal. O <select> na linha trocava o perfil a cada seta
+   percorrida no teclado: mudança de segurança sem confirmação, por acidente de navegação. */
+.adm-escolha{border:none;margin:0 0 14px;padding:0;min-width:0;overflow:auto;
+  display:flex;flex-direction:column;gap:8px;}
+.adm-escolha > legend{padding:0;margin-bottom:6px;}
+.adm-escolha-item{display:flex;align-items:flex-start;gap:8px;font-size:13px;
+  border:1px solid var(--hair);border-radius:8px;padding:8px 10px;cursor:pointer;}
+.adm-escolha-item.on{border-color:var(--navy);background:var(--soft);}
+
+/* Agendamentos — leitura em pt-BR ao lado do input nativo (o navegador desenha o picker no locale
+   dele; o que a tela garante é a leitura correta de QUANDO a coisa roda). */
+.agd-lido{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap;}
+
+/* Permissões — estado do alvo no resumo do formulário ("já concedido em… por…"). */
+.adm-resumo-estado{display:block;margin-top:4px;font-size:12px;color:var(--ink-2);}
+
+/* Portal — o rótulo do campo do operador pintava TODA a célula de lime sólido: com três
+   obrigatórios seguidos, o formulário lia como três erros antes de a pessoa digitar nada.
+   Fundo neutro; a marca de obrigatório é o filete lime, só nos obrigatórios. */
+.plabel{background:var(--soft);color:var(--navy);border-right:1px solid var(--hair-2);}
+.plabel.obrig{box-shadow:inset 3px 0 0 var(--lime);}
+[data-theme="dark"] .plabel{background:var(--soft);color:var(--ink);}
+[data-theme="dark"] .plabel .req{color:var(--lime);}
+
+/* Data resolvida por extenso abaixo do <input type="date">: o controle nativo desenha no locale
+   do NAVEGADOR, então "07/01/2026" (1º de julho) aparecia como 7 de janeiro justamente na tela
+   em que errar o período gera relatório carimbado errado em silêncio. É confirmação, não dica. */
+.pt-data-lida{font-size:12px;color:var(--ink);font-weight:600;}
+
+/* Título editável do quadro da Página (o campo duplicado do trilho direito saiu). */
+.pg-titulo-in{font:inherit;color:var(--ink);background:transparent;width:100%;min-width:0;
+  border:1px solid transparent;border-bottom:1px dashed var(--hair);border-radius:5px;
+  padding:1px 6px;margin-left:-6px;}
+.pg-titulo-in:hover{border-color:var(--hair);}
+.pg-titulo-in:focus{border-color:var(--navy);border-bottom-style:solid;}
+
+/* Com 3+ colunas de estado, a coluna do NOME era a primeira a encolher e nomes como
+   "VD_CONTA_RECEBIDA — Detalhe" quebravam em três linhas ao lado de cabeçalhos folgados. */
+.dgrid .dg-nome{min-width:230px;}
+/* Célula "fraca" (—, "nenhuma", "lendo…") no data grid: `.bmini td .cel-nula` não alcança `.dgrid`. */
+.dgrid td .cel-nula{color:var(--ink-3);}
+
+/* Cabeçalho de seção do catálogo do Portal: era a classe da NAVEGAÇÃO emprestada, e por isso
+   herdava a cor calibrada para o navy escuro da sidebar. */
+.pt-secao{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-2);}
+
+/* Cor fixa que escapou das duas varreduras (não usava token, então nenhuma regra a alcançou). */
+.login-eyebrow--ink,.login-foot-note{color:#5a6675;}
+/* A rolagem horizontal do data grid estava correta na estrutura e INVISÍVEL na tela: com scrollbar
+   overlay do macOS, a coluna de ações some em 1180px sem deixar rastro. Mesma receita de máscara
+   já usada na paleta e no trilho de relatórios. */
+.dgrid-wrap{mask-image:linear-gradient(90deg,#000 calc(100% - 22px),transparent);
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 22px),transparent);}
+/* Texto do bloco da Página era RECORTADO no limite: cortava a frase "Não é erro: é resultado" no
+   meio ("Não é er") — justamente a frase que existe para ser honesta. */
+.pbbody{overflow-wrap:anywhere;}
+
+/* Aviso de grafo maior que a área legível (editor). Fica no rodapé, FORA da pegada da paleta: ele
+   nasce quando o grafo não cabe e recomenda "Reorganizar" — mas o botão Reorganizar mora no rodapé
+   da paleta (`.sd-palette-rodape`), no mesmo canto. Com `left:14px` o aviso cobria justamente a
+   ação que manda clicar (medido: só o botão duplicado dentro do próprio aviso respondia). A regra
+   `.recolhida-paleta` existia e era código morto — a classe nunca era aplicada no shell. */
+.sd-naocoube{position:absolute;left:238px;bottom:12px;z-index:6;display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1px solid var(--hair);border-radius:8px;padding:6px 10px;
+  box-shadow:var(--shadow-1);font-size:12px;color:var(--ink-2);}
+.sd-shell.recolhida-paleta .sd-naocoube{left:14px;}
+
+/* Menu "⋯" das ações secundárias da linha (renomear, marca de sistema). `<details>` porque é
+   alcançável por teclado sem JS de foco e fecha com Escape de graça. */
+/* Gatilho do menu de ações da linha. */
+.dg-mais-btn{cursor:pointer;border:1px solid var(--hair);border-radius:6px;background:var(--surface);
+  color:var(--ink-2);padding:3px 9px;font-size:13px;line-height:1.3;font-family:inherit;}
+.dg-mais-btn:hover{border-color:#c3ccd8;color:var(--navy);}
+.dg-mais-btn.on{border-color:var(--navy);color:var(--navy);}
+/* O popup vive no BODY (portal) porque a tabela rola dentro de um contêiner com overflow, que
+   recortava o menu — ele aparecia cortado e por baixo da seção seguinte. */
+.dg-mais-fundo{position:fixed;inset:0;z-index:60;}
+.dg-mais-pop{z-index:61;min-width:190px;display:flex;flex-direction:column;gap:2px;padding:5px;
+  text-align:left;background:var(--surface);border:1px solid var(--hair);border-radius:8px;
+  box-shadow:var(--shadow-2);}
+.dg-mais-pop button{width:100%;text-align:left;border:1px solid transparent;border-radius:6px;
+  background:none;color:var(--ink);font-family:inherit;font-size:12.5px;padding:7px 9px;cursor:pointer;}
+.dg-mais-pop button:hover{background:var(--soft);}
+
+/* Card recolhido (grafo grande): mostra o que identifica o nó e convida a abrir. A altura menor é
+   o que permite o grafo caber legível — 15 editores abertos não cabem em tela nenhuma. */
+.nopipe-expandir{display:-webkit-box;max-height:calc(1.45em * 2);width:100%;text-align:left;border:none;background:none;cursor:pointer;
+  font-family:inherit;font-size:11.5px;line-height:1.45;color:var(--ink-2);padding:9px 13px 11px;
+  overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.nopipe-expandir:hover{color:var(--ink);background:var(--soft);}
+
+/* A coluna de status não pode roubar largura da coluna do nome: o pill mais longo do produto
+   ("RASCUNHO (SÓ NESTE NAVEGADOR)") é nowrap, e quando ele aparece a sub-linha do nome quebra em
+   quatro linhas nas outras linhas da tabela. */
+.dgrid td:has(> .statuspill),.dgrid th:nth-last-child(2){width:1%;white-space:nowrap;}
+
+/* Conta: com trilhas de 340px cabiam TRÊS colunas em 1080 e a linha de baixo parava na segunda —
+   borda direita esfarrapada. */
+.ct-wrap{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));}
+
+/* Portal: a fila de relatórios ROLA em vez de cortar o último pill (mediu-se 1034 de área para
+   1093 de conteúdo — 59px que sumiam sem rastro). O padding é para o anel de foco do pill não ser
+   recortado pelo overflow. */
+.report-rail-fila{display:flex;align-items:center;gap:10px;flex:1;min-width:0;
+  overflow-x:auto;padding:3px 2px 6px;scrollbar-width:thin;}
+.report-rail-fila .report-tab{flex:none;}
+
+/* Agendamentos: a leitura em pt-BR acima do campo deixou o controle mais alto que o seletor ao
+   lado — as bases voltam a alinhar. */
+.agd-freq,.agd-vig{align-items:flex-end;}
+.agd-lido{color:var(--ink);font-weight:600;}
+
+/* Portal, formulário do operador: a leitura da data é CONFIRMAÇÃO do que foi escolhido (o widget
+   nativo desenha no locale do navegador), não uma dica de apoio. */
+.exec-param-lida{font-size:12px;color:var(--ink);font-weight:600;}
+
+/* Branco sobre `--navy` no ESCURO dá 3,47:1. O token `--acao` foi criado para isso, mas a lista de
+   seletores cobria só os botões primários — estes ficaram de fora e são superfície de ação. */
+[data-theme="dark"] .report-tab.on,
+[data-theme="dark"] .tipo-seg button.on,
+[data-theme="dark"] .wseg button.on,
+[data-theme="dark"] .agd-dias label.on,
+[data-theme="dark"] .login-btn{background:var(--acao);color:var(--acao-ink);border-color:var(--acao);}
+
+/* Ação destrutiva não pode ser o controle de MENOR contraste da linha: discreta não é apagada. */
+.dgrid .dg-acts button.del{border-color:var(--hair);color:var(--ink-2);}
+
+/* Seis regras `:focus{outline:none}` (campos `.nm`, formulário do nó, busca da paleta, parâmetro do
+   operador…) venciam por especificidade o anel global de foco e deixavam só uma borda de 1px como
+   indicação. O anel volta no `:focus-visible` — a borda tingida continua, as duas somam. */
+input.nm:focus-visible,select.nm:focus-visible,textarea.nm:focus-visible,
+.exec-param input:focus-visible,.exec-param select:focus-visible,
+.no-form input:focus-visible,.no-form select:focus-visible,
+.no-param input:focus-visible,.no-func-busca:focus-visible,
+.sd-palette-busca input:focus-visible,.conta-in:focus-visible,
+.pbt-in:focus-visible,.nopipe-nome:focus-visible{outline:2px solid var(--navy);outline-offset:1px;}
+[data-theme="dark"] input.nm:focus-visible,[data-theme="dark"] select.nm:focus-visible,
+[data-theme="dark"] textarea.nm:focus-visible,[data-theme="dark"] .conta-in:focus-visible{
+  outline-color:var(--lime);}
+
+/* `.login-input:focus{outline:none}` também vencia o anel global. */
+.login-input:focus-visible{outline:2px solid var(--navy);outline-offset:1px;}
+/* Bloco largo vazava do quadro da Página e levava junto os próprios controles (o `×` de remover
+   saía da área visível). O bloco passa a ser contido pelo canvas. */
+.pcanvas{overflow:hidden;}
+.pblock{max-width:100%;}
+
+/* Snapshot com colunas e zero linha: a grade dizia o fato pelo silêncio. */
+.exec-obs td.exec-grade-vazia{padding:18px 14px;color:var(--ink-2);font-size:12.5px;line-height:1.5;
+  background:var(--soft);text-align:left;}
+
+/* No escuro `--navy` vira azul claro, e o número sobre o lime ficava em 2,03:1 — o pior par
+   medido do produto. O numeral do passo é tinta escura sobre o lime nos dois temas. */
+[data-theme="dark"] .step-tag .n{color:#0b1017;}
+
+/* Régua de abas ocupava a largura inteira ou parava no meio da tela conforme o número inline que
+   cada tela escolheu (520 no editor, 420 nos agendamentos, 520 na página). */
+.cfg-tabs{width:100%;}
+.cfg-tabs button{flex:0 0 auto;min-width:132px;}
+
+/* Em 1180px a coluna de ações saía de cena atrás de um degradê: máscara comunica "tem mais", não
+   "role para alcançar a ação destrutiva". A coluna passa a GRUDAR na borda direita — as ações
+   ficam sempre alcançáveis e a rolagem move só o conteúdo informativo. */
+/* Em notebook a tabela ficava mais larga que a área e a coluna de AÇÕES saía de cena — com o
+   Excluir junto. Tentei `position:sticky` na coluna: não funciona em célula de tabela (medido, o
+   botão continuava em x=1258 numa janela de 1180). A saída é a tabela CABER.
+   A truncagem é OPT-IN por classe: quando eu a escrevi como `td:nth-child(2)`, ela acertou TODA
+   `.dgrid` do produto — truncou os filtros do Portal sem tooltip e transformou o ponto da pílula
+   de status (filho de flex) em inline, fazendo-o sumir em 1180 e não em 1440. Regra posicional
+   conserta uma tela e quebra as vizinhas. */
+@media (max-width:1340px){
+  .dgrid td.dg-trunc{max-width:210px;}
+  .dgrid td.dg-trunc,.dgrid td.dg-trunc > *{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    display:block;max-width:100%;}
+  .dgrid .dg-acts{white-space:normal;}
+  .dgrid .dg-acts button{margin-bottom:2px;}
+}
+/* `.no-descricao` era o único `outline:none` sem anel restaurado — e é o campo em que se digita
+   primeiro dentro do nó. */
+.no-descricao:focus-visible{outline:2px solid var(--navy);outline-offset:1px;}
+[data-theme="dark"] .no-descricao:focus-visible{outline-color:var(--lime);}
+/* `×` do bloco na borda do quadro: com `overflow:hidden` no canvas ele era recortado. */
+.pcanvas{padding-right:14px;}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   NOTA PARA QUEM MEXER AQUI DEPOIS
+
+   Valor de token vive na DEFINIÇÃO do tema (`:root` no topo e o bloco
+   `[data-theme="dark"]`), nunca redeclarado no fim do arquivo. `:root` e
+   `[data-theme="dark"]` têm a MESMA especificidade: um `:root{ --x }` colado no
+   final vence o valor do escuro por ordem de declaração e apaga o tema inteiro
+   para aquele token, sem erro nenhum e sem ninguém notar até a próxima medição.
+   Foi exatamente assim que `--ink-3` derrubou o escuro para 3,41:1 depois de uma
+   correção que só olhava o tema claro.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* O formulário de agendamento trocava o anel de foco por uma sombra que compõe 1,17:1 no branco —
+   abaixo dos 3:1 que a WCAG exige para indicação não-textual, e sem versão escura. É a tela que
+   decide QUANDO os pipelines rodam sozinhos. */
+.agd-form input:not([type="radio"]):not([type="checkbox"]):focus-visible,
+.agd-form select:focus-visible,.agd-in:focus-visible,
+.no-form .cm-editor.cm-focused{outline:2px solid var(--navy);outline-offset:1px;}
+[data-theme="dark"] .agd-form input:not([type="radio"]):not([type="checkbox"]):focus-visible,
+[data-theme="dark"] .agd-form select:focus-visible,
+[data-theme="dark"] .agd-in:focus-visible,
+[data-theme="dark"] .no-form .cm-editor.cm-focused{outline-color:var(--lime);}
+
+/* Destino da conexão: reticência no elemento que TEM o texto (o corte a seco vinha de um
+   `overflow:hidden` no `<td>`, que recorta antes de a reticência do filho aparecer). Em notebook
+   encurta mais, para a coluna de ações continuar cabendo. */
+.cx-destino{font-family:ui-monospace,Menlo,monospace;font-size:12px;display:inline-block;
+  max-width:40ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;}
+@media (max-width:1340px){.cx-destino{max-width:22ch;}}
+
+/* Execuções em notebook: "Disparo" cortava no meio da palavra e "Usuário" saía de cena. A tabela
+   passa a caber — as duas colunas de contexto truncam com reticência e mantêm o valor no `title`
+   (mesma escolha de Conexões: esconder atrás de rolagem que só se anuncia por um degradê não é
+   resolver o overflow). */
+@media (max-width:1340px){
+  .exec-tabela-wrap td:nth-child(6),.exec-tabela-wrap td:nth-child(7){max-width:120px;}
+  .exec-tabela-wrap td:nth-child(6) > *,.exec-tabela-wrap td:nth-child(7) > *,
+  .exec-tabela-wrap td:nth-child(6),.exec-tabela-wrap td:nth-child(7){
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .exec-tabela-wrap thead th{padding-left:9px;padding-right:9px;}
+}
+
+/* Agrupamento dos selects de permissão: `fieldset` para o leitor de tela saber que dois campos
+   definem QUEM recebe e dois definem SOBRE O QUÊ, sem mudar o layout em linha. */
+.pm-grupo{border:none;margin:0;padding:0;min-width:0;display:flex;gap:12px;align-items:flex-end;}
+.pm-grupo > legend{padding:0;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+  font-weight:700;color:var(--ink-2);margin-bottom:6px;}
+@media (max-width:1080px){.pm-grupo{flex-wrap:wrap;}}
+
+
+/* ===== Rodada 6 — Identidade e Portal ===================================================== */
+
+/* CONTRASTE, tema escuro: o painel de login/redefinir é claro POR DESENHO (`.login-screen` e
+   `.login-form-panel` fixam #eef1f6/#fff), mas herdava os TOKENS do tema escuro do <html>. Com
+   `cflow-tema=dark`, quem encerra a sessão caía num login em que `--navy` valia #5b8bd0: o texto
+   digitado nos dois únicos campos da tela ficava em 3,47:1 sobre branco (medido: rgb(91,139,208)
+   sobre rgb(255,255,255)) — reprova AA. Fixar os tokens CLAROS na raiz do painel devolve 15,88:1
+   e o botão volta ao navy do produto. Vale para Redefinir, que usa a mesma `.login-screen`. */
+.login-screen{
+  --navy:#002050;--navy-700:#0a2f63;--bg:#F4F6F8;--surface:#FFFFFF;--soft:#fafbfc;
+  --soft-lime:#f9fbe8;--ink:#0d1b2e;--ink-2:#46566b;--ink-3:#64748b;--hair:#e4e9ef;
+  --hair-2:#eef1f5;--lime-soft:#eaf0a8;
+  --acao:#002050;--acao-2:#0a2f63;--acao-ink:#fff;--acao-ic:#C0D000;
+  --shadow-1:0 1px 2px rgba(10,32,72,.05),0 1px 1px rgba(10,32,72,.04);
+  --shadow-2:0 8px 30px rgba(10,32,72,.10);
+}
+
+/* Conta: erro e sucesso passaram a usar a faixa do design system (`.adm-banner`, que TEM tema
+   escuro) no lugar de `.login-erro`/`.conta-ok`, que fixam fundo claro — no escuro a mensagem era
+   o único bloco branco dentro do card. A faixa nasceu para vir ANTES do conteúdo; aqui ela fecha
+   o formulário e precisa do respiro em cima. */
+.ct-msg{margin:14px 0 0;}
+/* A frase que diz o que o estado do 2º fator significa vai em linha própria sob a pill: em linha
+   com ela, quebrava no meio em 1180px. */
+.ct-mfa-nota{display:block;margin-top:6px;font-size:12px;color:var(--ink-2);}
+
+/* Permissões: os quatro selects em dois grupos de larguras IGUAIS. A largura de um `<select>` é a
+   da opção mais longa — o de recurso abria ~50% mais largo que o de tipo (linha esfarrapada) e em
+   1180px os grupos empilhavam com um select solto e largo. Escopado em `.pm-grupo`: `.selrow` é
+   usada por outras telas e regra solta ali vaza (já aconteceu com `td:nth-child`). */
+.selrow:has(.pm-grupo){align-items:flex-start;}
+.pm-grupo{flex:1 1 340px;}
+.pm-grupo .f{flex:1 1 0;min-width:0;}
+.pm-grupo select{min-width:0;width:100%;}
+
+/* Portal: a seta do trilho ROLA a fila (não troca de relatório) e precisa PARECER desabilitada nas
+   pontas — `.rail-arrow` não tinha estado próprio. */
+.rail-arrow:disabled{opacity:.35;cursor:default;}
+
+/* ===== Rodada 7 — contraste medido tela a tela, nos dois temas ============================== */
+/* A varredura (contraste computado de todo texto visível em 13 rotas × 2 temas) devolveu quatro
+   pares reprovando. Dois eram botão DESABILITADO (isento). Os três abaixo são reprovação real. */
+
+/* O verde do perfil dava 4,07:1 sobre o branco do card (11px/700 → o limite é 4,5). #577f2a leva a
+   4,69:1. No tema escuro o mesmo verde caía para 3,98:1 sobre a superfície escura: ali ele precisa
+   CLAREAR, não escurecer — token por tema, não um valor só. */
+[data-theme="dark"] .conta-perfil{color:#9ec253;}   /* 7,95:1 sobre a superfície escura */
+
+/* O avatar herdava `--navy`, que no tema escuro vale #5b8bd0: branco sobre ele dá 3,47:1 e o texto
+   tem 16px/800 (abaixo do limiar de "texto grande", então exige 4,5). Fundo próprio no escuro. */
+[data-theme="dark"] .conta-avatar{background:#2f5d9e;}  /* branco → 6,60:1 */
+
+/* Link do id da execução no tema escuro: --navy vira #5b8bd0 e dá 4,24:1 sobre a linha da grade.
+   É o link que leva ao detalhe — some justamente onde se procura o número. */
+[data-theme="dark"] .exec-cel-link{color:#6d99d8;}  /* 5,04:1 na linha, 5,56:1 no card */
+
+/* Rótulo do controle DESABILITADO: valor por TEMA, não valor fixo. Fixar #5b6979 acertou o claro
+   (4,95:1) e levou o escuro a 2,55:1 — o fundo do desabilitado muda com o tema, então a cor do
+   rótulo tem de mudar junto. Terceira vez nesta auditoria que um valor fixo conserta um tema e
+   quebra o outro; por isso é token. */
+:root{--desab-ink:#5b6979;}                       /* 4,95:1 sobre o fundo claro do desabilitado */
+[data-theme="dark"]{--desab-ink:#8b98a8;}         /* 4,88:1 sobre o fundo escuro do desabilitado */
+
+/* Marcador redondo sobre o lime (o "ƒ" e o "✓" do editor de funções, o número do passo): no tema
+   escuro ele herdava `--navy`, que ali é o token de TEXTO-acento (azul claro) — sobre o lime isso
+   dá 2,03:1 e o caractere some. `.step-tag .n` já tinha esse conserto; `.cstep .ch .n` não tinha.
+   Sobre lime o que funciona é tinta escura: 10,11:1. */
+[data-theme="dark"] .cstep .ch .n{color:#0b1017;}
+
+/* NOTA: o ajuste do `--ink-3` do tema claro NÃO vem aqui. Declarar o token de novo em `:root` no
+   fim do arquivo empata em especificidade com `[data-theme="dark"]` e a ORDEM decide — foi assim
+   que o valor do tema escuro morreu (de novo). O valor claro está na definição do tema, no topo. */
+[data-theme="dark"] .instr li .ar{color:var(--lime);}
+
+/* ---- Bloco das FONTES DE INGESTÃO (aba Bronze da listagem de pipelines) ----
+   O bloco existe para dizer, sem precisar de legenda, que ali NÃO são pipelines: filete lateral
+   próprio, título de seção e um selo no cabeçalho. As linhas já não têm cursor de mão nem botão
+   "Editar" (o `GridLista` não recebe `onAbrir`), mas isso só se percebe ao passar o mouse — e uma
+   grade idêntica logo abaixo de outra é lida como continuação dela. */
+.ing-bloco{border-top:1px solid var(--hair);margin-top:8px;padding-top:20px;}
+.ing-tit{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  font-family:"Space Grotesk";font-weight:600;font-size:15px;letter-spacing:-.01em;
+  color:var(--ink);margin:0 0 5px;}
+/* Selo, não pílula de status: é rótulo de CATEGORIA da seção, e reusar `.statuspill` faria "não são
+   pipelines" parecer o desfecho de alguma execução — na mesma tela em que pílula significa isso. */
+.ing-selo{font-weight:600;font-size:10.5px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink-3);background:var(--hair-2);
+  border:1px solid var(--hair);border-radius:999px;padding:2px 9px;}
+.ing-sub{color:var(--ink-3);font-size:12.5px;margin:0 0 14px;max-width:82ch;line-height:1.5;}
+/* `.aviso` do produto está escopado em `.agd` (Agendamentos) — reusar o nome aqui daria um banner
+   sem estilo nenhum. Mesmo desenho, classe própria, com o tema escuro coberto de saída. */
+.ing-aviso{border-radius:8px;padding:9px 13px;font-size:13px;margin:0 0 12px;}
+.ing-aviso.erro{background:#fdecee;color:#a5333b;border:1px solid #f0c4c9;}
+.ing-aviso.ok{background:#eef7ee;color:#2f7a36;border:1px solid #cfe6d0;}
+[data-theme="dark"] .ing-aviso.erro{background:#2f1c1f;border-color:#5a2f33;color:#f0a3a8;}
+[data-theme="dark"] .ing-aviso.ok{background:#16281c;border-color:#2c4a33;color:#8fd0a8;}
+
+/* ---- Tela carregando sob demanda (App.tsx: `CarregandoTela`) ----
+   Só aparece se o chunk da tela demorar: o atraso evita piscar um aviso nas trocas em que o arquivo
+   já está no cache. Surge sem movimento (só opacidade), então não depende de prefers-reduced-motion. */
+.carregando-tela{padding:28px 32px;font-size:13px;color:var(--ink-3);opacity:0;animation:carregando-tela-surge .15s ease-out .3s forwards;}
+@keyframes carregando-tela-surge{to{opacity:1;}}

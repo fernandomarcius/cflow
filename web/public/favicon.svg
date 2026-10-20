@@ -1,0 +1,7 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="cFlow">
+  <rect width="64" height="64" rx="14" fill="#1f3a5f"/>
+  <circle cx="16" cy="32" r="5" fill="#9ec531"/>
+  <circle cx="48" cy="18" r="5" fill="#e8eef7"/>
+  <circle cx="48" cy="46" r="5" fill="#e8eef7"/>
+  <path d="M21 32 C 32 32, 34 18, 43 18 M21 32 C 32 32, 34 46, 43 46" fill="none" stroke="#9ec531" stroke-width="3" stroke-linecap="round"/>
+</svg>

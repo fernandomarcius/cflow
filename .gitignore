@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+
+# Node / front-end
+node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+
+# Environment / secrets
+.env
+*.env
+!.env.example
+
+# Database backups
+backups/
+*.dump
+
+# Run snapshots (Parquet), uploads, exports
+snapshots/
+uploads/
+exports/
+export/
+
+# Local medallion lake and its cache (ingested data, not source)
+lake/
+lake_cache/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Data files never belong in the repository
+*.duckdb
+*.parquet
+*.tmp

@@ -1,0 +1,10 @@
+# Temporal dynamic config (mounted at /etc/temporal/config/dynamicconfig/docker.yaml).
+#
+# The `temporalio/server` image does not ship this file and refuses to start without it. An empty
+# map means "all server defaults". Keep tuning here, with the reason written next to it, rather than
+# through ad-hoc commands in a container that the next `up` recreates.
+#
+# Format, for when something needs to go in:
+#   limit.maxIDLength:
+#     - value: 255
+{}
